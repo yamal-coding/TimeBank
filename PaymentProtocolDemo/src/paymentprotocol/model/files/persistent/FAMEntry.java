@@ -1,4 +1,4 @@
-package paymentprotocol.model.files.ephemeral;
+package paymentprotocol.model.files.persistent;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.ContentHashPastContent;
