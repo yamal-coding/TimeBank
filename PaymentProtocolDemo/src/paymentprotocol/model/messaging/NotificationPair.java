@@ -1,4 +1,4 @@
-package paymentprotocol.model.notification;
+package paymentprotocol.model.messaging;
 
 import rice.p2p.commonapi.Message;
 
