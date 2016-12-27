@@ -1,22 +1,36 @@
 package paymentprotocol.model.messaging;
 
+import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
 
 public class NotificationPair implements Message {
 	private String id; //cambiar tipo
-	private String hash; //cambiar tipo
+	private Id hash;
 	
-	public NotificationPair(String id, String hash) {
+	/**
+	 * Constructor
+	 * @param id
+	 * @param hash
+	 */
+	public NotificationPair(String id, Id hash) {
 		super();
 		this.id = id;
 		this.hash = hash;
 	}
 
+	/**
+	 * Returns the id stored in this notification pair
+	 * @return id
+	 */
 	public String getId() {
 		return id;
 	}
 	
-	public String getHash() {
+	/**
+	 * Returns the hash stored in this notification pair
+	 * @return hash
+	 */
+	public Id getHash() {
 		return hash;
 	}
 	
@@ -24,6 +38,10 @@ public class NotificationPair implements Message {
 		return "NotificationPair: id = " + id + " hash = " + hash;
 	}
 
+	/**
+	 * Returns the priority of the FreePastry Message. It has to be low because of
+	 * the inner maintenance traffic of FreePastry's network
+	 */
 	@Override
 	public int getPriority() {
 		return LOW_PRIORITY;

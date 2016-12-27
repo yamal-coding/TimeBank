@@ -18,6 +18,8 @@ package demo;
 public class Demo {
 	
 	public Demo(){
+		createStorage();
+		
 		createFreePastryNode();
 		createFreePastryNode();
 		
@@ -31,11 +33,19 @@ public class Demo {
 		
 		storeBill();
 		
-		runGUI();
-		runGUI();
+		run();
+		run();
 	}
-
-
+	
+	/**
+	 * This function creates a Past storage necessary to store the bill and the public profiles
+	 * before launching application for both users (debitor and creditor)
+	 */
+	private void createStorage(){
+		
+	}
+	
+	
 	private void createFreePastryNode(){
 		
 	}
@@ -56,7 +66,7 @@ public class Demo {
 		
 	}
 	
-	private void runGUI(){
+	private void run(){
 		
 	}
 }
