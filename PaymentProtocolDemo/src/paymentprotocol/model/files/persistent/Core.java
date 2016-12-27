@@ -3,12 +3,10 @@ package paymentprotocol.model.files.persistent;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 
 import paymentprotocol.model.command.Command;
 import paymentprotocol.model.messaging.NotificationHandler;
 import rice.environment.Environment;
-import rice.p2p.commonapi.Node;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastImpl;
 import rice.pastry.NodeIdFactory;
@@ -35,12 +33,15 @@ public class Core {
 	private PastryIdFactory idFactory;
 	private Past past;
 	
+	private boolean connected;
+	
 	private NotificationHandler notificationHandler;
 	
 	public Core(Environment env){
 		//hay que hacer que el id de cada nodo se genere con un hash de un UUUID
 		//para que no se repitan
 		this.env = env;
+		this.connected = false;
 	}
 	
 	/**
@@ -50,63 +51,67 @@ public class Core {
 	 * @param bootport
 	 */
 	public void connect(int bindport, String bootAdrress, int bootport){
-		try {
-			//Comprobamos que la direccion de conexion existe y la usamos
-			InetAddress bootInetAddress = InetAddress.getByName(bootAdrress);
-			InetSocketAddress bootInetSocketAddress = new InetSocketAddress(bootInetAddress, bootport);
-			
-			//Instanciamos la factoria de Ids de nodos
-			NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
-			
-			//Instanciamos la factoría de nodos
-			PastryNodeFactory nodeFactory = new SocketPastryNodeFactory(nidFactory, bindport, env);
-			
-			//Instanciamos nuestro nodo sobre el que trabajara el programa y que conectaremos a la red FreePastry
-			PastryNode node = nodeFactory.newNode();
-			
-			//Instanciamos el manejador de notificaciones entre nodos (NoificationHandler)
-			notificationHandler = new NotificationHandler(node);
-			
-			//Instanciamos la factoria de ids que se usaran como claves en la DHT (se usa SHA-1 para generar dichps ids)
-			idFactory = new PastryIdFactory(env);
-			
-			//Ahora procedemos a crear una instancia de almacenamiento Past para nuestro nodo
-			
-			//En primer lugar especificamos el tipo de almacenamiento y la ruta de este
-			String storageDirectory = "./storage" + node.getId().hashCode();
-			
-			Storage storage = new PersistentStorage(idFactory, storageDirectory, 4*1024*1024, node.getEnvironment());
-			//si queremos almacenamiento en RAM se usaria MemoryStorage en lugar de PersistentStorage
-			//Storage storage = new MemoryStorage(idf);
-			
-			//Instanciamos la iterfaz Past como PastImpl. Este objeto nos servira para realizar las operaciones de put y get de la DHT
-			//Recibe el nodo sobre el que trabaja, el almacenamiento, el numero de replicas de cada almacenamiento entre otros.
-			past = new PastImpl(node, new StorageManagerImpl(idFactory, storage, new LRUCache(new MemoryStorage(idFactory), 512*1024, node.getEnvironment())), 3, "");
-			
-			//We conect our pastry node with the boot address
-			node.boot(bootInetSocketAddress);
-			
-			//Several attempts are made to connect the node to the network
-			synchronized(node){
-				while(!node.isReady() && !node.joinFailed()){
-					//Delay to not collapse connection process
-					try {
-						node.wait(500);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
+		if (!connected) {
+			try {
+				//It is necessary an InetSocketAddress instance to connect the node to the layer that FreePastry uses
+				InetAddress bootInetAddress = InetAddress.getByName(bootAdrress);
+				InetSocketAddress bootInetSocketAddress = new InetSocketAddress(bootInetAddress, bootport);
+				
+				//A node id factory is instantiated. In this case a random factory is used 
+				NodeIdFactory nidFactory = new RandomNodeIdFactory(env);
+				
+				//The node factory is instatiated using the previous node id factory
+				PastryNodeFactory nodeFactory = new SocketPastryNodeFactory(nidFactory, bindport, env);
+				
+				//The pastry node that will be connected to the FreePastry network is created
+				PastryNode node = nodeFactory.newNode();
+				
+				//The notification handler must be instantiated to handle the messages that the node receives and sends
+				notificationHandler = new NotificationHandler(node);
+				
+				//It is created a factory to generate the keys of the values stored into the DHT. The algorithm used is SHA-1
+				idFactory = new PastryIdFactory(env);
+				
+				//The next step is create a Past instance for the self node
+				
+				//The storage directory where the Past instance will be created must be specified
+				String storageDirectory = "./storage" + node.getId().hashCode();
+				
+				//In this case a disk based storage is used to implement the storage interface
+				Storage storage = new PersistentStorage(idFactory, storageDirectory, 4*1024*1024, node.getEnvironment());
+				//MemoryStorage implementation uses RAM based storage
+				//Storage storage = new MemoryStorage(idf);
+				
+				//The Past interface is implemented using the previous storage object and a cache is specified too.
+				//This Past instance will be used to perform the "put" and "lookup" operations on the DHT.
+				past = new PastImpl(node, new StorageManagerImpl(idFactory, storage, new LRUCache(new MemoryStorage(idFactory), 512*1024, node.getEnvironment())), 3, "");
+				
+				//We conect our pastry node with the boot address
+				node.boot(bootInetSocketAddress);
+				
+				//Several attempts are made to connect the node to the network
+				synchronized(node){
+					while(!node.isReady() && !node.joinFailed()){
+						//Delay to not collapse connection process
+						try {
+							node.wait(500);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						
+						//If an error occurred an exception is thrown
+						if (node.joinFailed())
+							throw new IOException("Unable to connect the node to the network. Reason: " + node.joinFailedReason());
 					}
-					
-					//If an error occurred an exception is thrown
-					if (node.joinFailed())
-						throw new IOException("Unable to connect the node to the network. Reason: " + node.joinFailedReason());
 				}
+				
+				//Now we can notify to the observers the connection success
+				connected = true;
+				
+			} catch (Exception e) {
+				//If an exception is thrown during connection process, the error must be notified to the observers
+				e.printStackTrace();
 			}
-			
-			//Now we can notify to the observers the connection success
-			
-		} catch (Exception e) {
-			//If an exception is thrown during connection process, the error must be notified to the observers
-			e.printStackTrace();
 		}
 	}
 	
