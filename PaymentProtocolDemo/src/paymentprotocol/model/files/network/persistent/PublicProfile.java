@@ -1,30 +1,30 @@
-package paymentprotocol.model.files.persistent;
+package paymentprotocol.model.files.network.persistent;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.ContentHashPastContent;
 
 public class PublicProfile extends ContentHashPastContent {
 	private String fileType;
-	private String self_publicKey;
+	private String self_publicKey; //cambiar tipo
 	private String self_firstName;
 	private String self_surnames;
 	private String self_telephone;
 	private String self_email;
 	private String self_address;
-	private String self_previous_profileDHTHash;
+	private Id self_previous_profileDHTHash;
 	private String enabled;
-	private String timestamp_creation;
-	private String self_digitalSignature_creation;
-	private String self_last_LedgerEntryDHTHash;
-	private String self_last_FAMEntryDHTHash;
-	private String self_last_FBMEntryDHTHash;
-	private String timestamp_lastchange;
-	private String self_digitalSignatureLastChange;
-	
+	private String timestamp_creation; //cambiar tipo
+	private String self_digitalSignature_creation; //cambiar tipo
+	private Id self_last_LedgerEntryDHTHash;
+	private Id self_last_FAMEntryDHTHash;
+	private Id self_last_FBMEntryDHTHash;
+	private String timestamp_lastchange; //cambiar tipo
+	private String self_digitalSignatureLastChange; //cambiar tipo
+
 	public PublicProfile(Id myId, String fileType, String self_publicKey, String self_firstName, String self_surnames,
-			String self_telephone, String self_email, String self_address, String self_previous_profileDHTHash,
+			String self_telephone, String self_email, String self_address, Id self_previous_profileDHTHash,
 			String enabled, String timestamp_creation, String self_digitalSignature_creation,
-			String self_last_LedgerEntryDHTHash, String self_last_FAMEntryDHTHash, String self_last_FBMEntryDHTHash,
+			Id self_last_LedgerEntryDHTHash, Id self_last_FAMEntryDHTHash, Id self_last_FBMEntryDHTHash,
 			String timestamp_lastchange, String self_digitalSignatureLastChange) {
 		super(myId);
 		this.fileType = fileType;
@@ -73,7 +73,7 @@ public class PublicProfile extends ContentHashPastContent {
 		return self_address;
 	}
 
-	public String getSelf_previous_profileDHTHash() {
+	public Id getSelf_previous_profileDHTHash() {
 		return self_previous_profileDHTHash;
 	}
 
@@ -89,15 +89,15 @@ public class PublicProfile extends ContentHashPastContent {
 		return self_digitalSignature_creation;
 	}
 
-	public String getSelf_last_LedgerEntryDHTHash() {
+	public Id getSelf_last_LedgerEntryDHTHash() {
 		return self_last_LedgerEntryDHTHash;
 	}
 
-	public String getSelf_last_FAMEntryDHTHash() {
+	public Id getSelf_last_FAMEntryDHTHash() {
 		return self_last_FAMEntryDHTHash;
 	}
 
-	public String getSelf_last_FBMEntryDHTHash() {
+	public Id getSelf_last_FBMEntryDHTHash() {
 		return self_last_FBMEntryDHTHash;
 	}
 
@@ -108,4 +108,6 @@ public class PublicProfile extends ContentHashPastContent {
 	public String getSelf_digitalSignatureLastChange() {
 		return self_digitalSignatureLastChange;
 	}
+	
+	
 }

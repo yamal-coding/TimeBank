@@ -1,10 +1,12 @@
 package paymentprotocol.model.messaging;
 
-import paymentprotocol.observer.Observer;
+import paymentprotocol.observer.CoreObserver;
+import paymentprotocol.observer.GUIObserver;
 import rice.p2p.commonapi.Application;
 import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
+import rice.p2p.commonapi.MessageReceipt;
 import rice.p2p.commonapi.Node;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.commonapi.RouteMessage;
@@ -12,17 +14,27 @@ import rice.p2p.commonapi.RouteMessage;
 public class NotificationHandler implements Application {
 	private Endpoint endpoint;
 	
-	private Observer observer;
+	private CoreObserver coreObserver;
 	
-	public NotificationHandler(Node node) {
+	public NotificationHandler(Node node, CoreObserver coreObserver) {
 		this.endpoint = node.buildEndpoint(this, "myinstance");
 		this.endpoint.register();
+		this.coreObserver = coreObserver;
+	}
+	
+	/**
+	 * Method used to send a message to a concrete node trough his NodeHandle
+	 * @param nh
+	 * @param msg
+	 */
+	public void sendNotification(NodeHandle nh, Message msg){
+		endpoint.route(null, msg, nh);
 	}
 	
 	@Override
 	public void deliver(Id arg0, Message arg1) {
-		// TODO Auto-generated method stub
-
+		//filtrar el mensaje que se recibe
+		coreObserver.onReceiveNotification();
 	}
 
 	@Override
