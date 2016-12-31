@@ -1,28 +1,20 @@
 package paymentprotocol.model.p2p;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.UnknownHostException;
 
 import paymentprotocol.model.messaging.NotificationHandler;
 import paymentprotocol.observer.CoreObserver;
+import rice.Continuation;
 import rice.environment.Environment;
+import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.past.Past;
-import rice.p2p.past.PastImpl;
-import rice.pastry.NodeIdFactory;
+import rice.p2p.past.PastContent;
 import rice.pastry.PastryNode;
-import rice.pastry.PastryNodeFactory;
 import rice.pastry.commonapi.PastryIdFactory;
-import rice.pastry.socket.SocketPastryNodeFactory;
-import rice.pastry.standard.RandomNodeIdFactory;
-import rice.persistence.LRUCache;
-import rice.persistence.MemoryStorage;
-import rice.persistence.PersistentStorage;
 import rice.persistence.Storage;
-import rice.persistence.StorageManagerImpl;
 
 public class P2PLayer {
 	private Environment env;
@@ -32,10 +24,13 @@ public class P2PLayer {
 	
 	private NotificationHandler notificationHandler;
 	
+	private CoreObserver coreObserver;
+	
 	private boolean connected;
 	
-	public P2PLayer(Environment env){
+	public P2PLayer(Environment env, CoreObserver coreObserver){
 		this.env = env;
+		this.coreObserver = coreObserver;
 		this.connected = false;
 	}
 	
@@ -81,14 +76,56 @@ public class P2PLayer {
 		notificationHandler.sendNotification(nh, msg);
 	}
 	
-	public void put(){
+	public void put(PastContent content, String contentID){
+		past.insert(content, new InsertContinuationImpl(contentID));
+	}
+	
+	private class InsertContinuationImpl implements Continuation<Boolean[], Exception> {
+		private String content;
 		
+		public InsertContinuationImpl(String content) {
+			this.content = content;
+		}
+		
+		//Method called when there has been an error during insert call
+		@Override
+		public void receiveException(Exception arg0) {
+			coreObserver.onFinishedStorage("Failed content " + content + " storage.", false);
+		}
+
+		//Method called when insert call has successfully finish. It receibes a Boolean array
+		//to now how many replicas have been stored (True -> stored; False -> not stored)
+		//Metodo que es llamado cuando se ha finalizado el almacenamiento del contenido. Recibe
+		//un array de Boolean para saber cuantas de las replicas se han almacenado y cuantas no
+		//true -> almacenado; false -> no almacenado
+		@Override
+		public void receiveResult(Boolean[] arg0) {
+			//The number of successfull stores is counted and printed
+			int successfullStores = 0;
+			for (int i = 0; i < arg0.length; i++){
+				if (arg0[i].booleanValue())
+					successfullStores++;
+			}
+			
+			coreObserver.onFinishedStorage("Content "+ content + " has been stored " + successfullStores + " times.", false);
+		}		
 	}
 	
 	
-	public void get(){
-		
+	public void get(Id key){
+		past.lookup(key, new Continuation<PastContent, Exception>(){
+			
+			//Metodo que se llama cuando ha habido algun error en el lookup de un contenido en la DHT
+			@Override
+			public void receiveException(Exception arg0) {
+				//Notify to Core
+			}
+			//Metodo que se llama cuando el resultado a sido devuelto por la DHT
+			@Override
+			public void receiveResult(PastContent arg0) {
+				//Notify to Core
+			}
+			
+		});
 	}
-
-
 }

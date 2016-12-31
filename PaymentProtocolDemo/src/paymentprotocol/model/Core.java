@@ -1,10 +1,12 @@
 package paymentprotocol.model;
 
 import java.io.IOException;
+import java.util.List;
 
 import paymentprotocol.model.p2p.P2PLayer;
 import paymentprotocol.observer.CoreObserver;
 import paymentprotocol.observer.GUIObserver;
+import rice.p2p.commonapi.Id;
 
 /**
  * Application core. All the main operations are called in this class.
@@ -54,8 +56,24 @@ public class Core implements CoreObserver {
 		}
 	}
 	
+	public void loadTransactions(List<Id> keys){
+		for (Id key : keys)
+			p2pLayer.get(key);
+	}
+	
 	@Override
 	public void onReceiveNotification() {
 		guiObserver.onReceiveNotification();
+	}
+
+	@Override
+	public void onFinishedStorage(String msg, boolean error) {
+		if (error){//there has been errors during the "insert" call into the DHT
+			
+		}
+		else{//Successful insertion into the DHT
+			
+		}
+		
 	}
 }

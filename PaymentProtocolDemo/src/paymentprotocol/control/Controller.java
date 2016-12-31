@@ -1,8 +1,10 @@
 package paymentprotocol.control;
 
+import java.util.List;
+
 import paymentprotocol.model.Core;
-import paymentprotocol.model.command.Command;
 import paymentprotocol.observer.GUIObserver;
+import rice.p2p.commonapi.Id;
 
 public class Controller {
 	private Core core;
@@ -15,7 +17,11 @@ public class Controller {
 		core.addObserver(obs);
 	}
 	
-	//
+	public void loadTransactions(List<Id> keys){
+		core.loadTransactions(keys);
+	}
+	
+	
 	public void startPaymentProtocolPhase1(){
 		
 	}

@@ -9,14 +9,13 @@ import paymentprotocol.model.files.local.PrivateProfile;
 import paymentprotocol.model.files.network.persistent.Bill;
 import paymentprotocol.model.files.network.persistent.FileType;
 import paymentprotocol.model.files.network.persistent.PublicProfile;
-import paymentprotocol.model.messaging.NotificationHandler;
 import paymentprotocol.model.p2p.P2PUtil;
 import paymentprotocol.model.util.Util;
 import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
-import rice.p2p.past.ContentHashPastContent;
 import rice.p2p.past.Past;
+import rice.p2p.past.PastContent;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.persistence.Storage;
@@ -43,40 +42,43 @@ public class Demo {
 	PastryIdFactory idFactory;
 	PastryNode node;
 	
+	public static void main(String[] args){
+		Demo d = new Demo();
+		try {
+			d.runDemo(9001, "192.168.1.37", 9001);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
 	public Demo(){
 		env = new Environment();
 		env.getParameters().setString("nat_search_policy","never");
 	}
 	
 	public void runDemo(int bindport, String bootAddress, int bootport) throws IOException {
+		createBootNode(bindport, bootAddress, bootport);
 		
 		PrivateProfile debitorPrivateProfile = createPrivateProfile(java.util.UUID.randomUUID());
 		PrivateProfile creditorPrivateProfile = createPrivateProfile(java.util.UUID.randomUUID());
 		
-		ContentHashPastContent debitorPublicProfile = createPublicProfile(debitorPrivateProfile.getUUID(), false);
-		ContentHashPastContent creditorPublicProfile = createPublicProfile(creditorPrivateProfile.getUUID(), true);
+		PastContent debitorPublicProfile = createPublicProfile(debitorPrivateProfile.getUUID(), false);
+		PastContent creditorPublicProfile = createPublicProfile(creditorPrivateProfile.getUUID(), true);
 
-		ContentHashPastContent bill = createBill(creditorPrivateProfile.getUUID(), creditorPublicProfile.getId(), debitorPublicProfile.getId());
+		PastContent bill = createBill(creditorPrivateProfile.getUUID(), creditorPublicProfile.getId(), debitorPublicProfile.getId());
 		
 		debitorPrivateProfile.setSelf_publicProfile_DHTHash(debitorPublicProfile.getId());
 		debitorPrivateProfile.addTransaction(bill.getId());
+		
 		creditorPrivateProfile.setSelf_publicProfile_DHTHash(creditorPublicProfile.getId());
 		creditorPrivateProfile.addTransaction(bill.getId());
-		
-		createBootNode(bindport, bootAddress, bootport);
 		
 		storePublicProfilesAndBill(debitorPublicProfile, creditorPublicProfile, bill);
 		
 		
-		createFreePastryNode();
-		createFreePastryNode();
-		
-		storePublicProfile();
-		storePublicProfile();
-		
-		
-		
-		storeBill();
+		//createFreePastryNode();
+		//createFreePastryNode();
 		
 		run();
 		run();
@@ -105,51 +107,44 @@ public class Demo {
 		P2PUtil.connectNode(node, bootInetSocketAddress);
 	}
 
-	private void storePublicProfilesAndBill(ContentHashPastContent debitorPublicProfile, ContentHashPastContent creditorPublicProfile, ContentHashPastContent bill){
-		past.insert(debitorPublicProfile, new Continuation<Boolean[], Exception>() {
-			
-			@Override
-			public void receiveResult(Boolean[] arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void receiveException(Exception arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-		});
+	private void storePublicProfilesAndBill(PastContent debitorPublicProfile, PastContent creditorPublicProfile, PastContent bill){
+		past.insert(debitorPublicProfile, new InsertContinuationImpl(FileType.PUBLIC_PROFILE.toString() + ".debitorPublicProfile"));
 		
-		past.insert(creditorPublicProfile, new Continuation<Boolean[], Exception>() {
-			
-			@Override
-			public void receiveResult(Boolean[] arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-			
-			@Override
-			public void receiveException(Exception arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-		});
+		past.insert(creditorPublicProfile, new InsertContinuationImpl(FileType.PUBLIC_PROFILE.toString() + ".creditorPublicProfile"));
 		
-		past.insert(bill, new Continuation<Boolean[], Exception>() {
-			
-			@Override
-			public void receiveResult(Boolean[] arg0) {
-				// TODO Auto-generated method stub
-				
+		past.insert(bill, new InsertContinuationImpl(FileType.BILL_ENTRY.toString() + ".Bill"));
+		
+	}
+	
+	private class InsertContinuationImpl implements Continuation<Boolean[], Exception> {
+		private String content;
+		
+		public InsertContinuationImpl(String content) {
+			this.content = content;
+		}
+		
+		//Method called when there has been an error during insert call
+		@Override
+		public void receiveException(Exception arg0) {
+			System.err.println("Failed content " + content + " storage.");
+		}
+
+		//Method called when insert call has successfully finish. It receibes a Boolean array
+		//to now how many replicas have been stored (True -> stored; False -> not stored)
+		//Metodo que es llamado cuando se ha finalizado el almacenamiento del contenido. Recibe
+		//un array de Boolean para saber cuantas de las replicas se han almacenado y cuantas no
+		//true -> almacenado; false -> no almacenado
+		@Override
+		public void receiveResult(Boolean[] arg0) {
+			//The number of successfull stores is counted and printed
+			int successfullStores = 0;
+			for (int i = 0; i < arg0.length; i++){
+				if (arg0[i].booleanValue())
+					successfullStores++;
 			}
 			
-			@Override
-			public void receiveException(Exception arg0) {
-				// TODO Auto-generated method stub
-				
-			}
-		});
+			System.out.println("Content "+ content + " has been stored " + successfullStores + " times.");
+		}		
 	}
 	
 	private void createFreePastryNode(){
@@ -213,14 +208,6 @@ public class Demo {
 		return new Bill(bill_DHTHash, self_transRef, other_transRef,
 				self_profile_DHTHash, other_profile_DHTHash, actualServiceHours,
 				other_digitalSignature, timestamp_creation, self_digitalSignature_creation);
-	}
-	
-	private void storePublicProfile(){
-		
-	}
-	
-	private void storeBill(){
-		
 	}
 	
 	private void run(){
