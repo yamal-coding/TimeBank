@@ -1,5 +1,7 @@
 package demo;
 
+import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.sql.Timestamp;
 import java.util.UUID;
 
@@ -7,10 +9,17 @@ import paymentprotocol.model.files.local.PrivateProfile;
 import paymentprotocol.model.files.network.persistent.Bill;
 import paymentprotocol.model.files.network.persistent.FileType;
 import paymentprotocol.model.files.network.persistent.PublicProfile;
+import paymentprotocol.model.messaging.NotificationHandler;
+import paymentprotocol.model.p2p.P2PUtil;
 import paymentprotocol.model.util.Util;
+import rice.Continuation;
 import rice.environment.Environment;
 import rice.p2p.commonapi.Id;
+import rice.p2p.past.ContentHashPastContent;
+import rice.p2p.past.Past;
+import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
+import rice.persistence.Storage;
 
 /**
  * This class will do the necessary operations to test and simulate the payment protocol
@@ -30,34 +39,34 @@ import rice.pastry.commonapi.PastryIdFactory;
  */
 public class Demo {
 	Environment env;
-	
+	Past past;
 	PastryIdFactory idFactory;
+	PastryNode node;
 	
 	public Demo(){
 		env = new Environment();
 		env.getParameters().setString("nat_search_policy","never");
-		
-		idFactory = new PastryIdFactory(env);
 	}
 	
-	public void runDemo(){
+	public void runDemo(int bindport, String bootAddress, int bootport) throws IOException {
 		
 		PrivateProfile debitorPrivateProfile = createPrivateProfile(java.util.UUID.randomUUID());
 		PrivateProfile creditorPrivateProfile = createPrivateProfile(java.util.UUID.randomUUID());
 		
-		PublicProfile debitorPublicProfile = createPublicProfile(debitorPrivateProfile.getUUID(), false);
-		PublicProfile creditorPublicProfile = createPublicProfile(creditorPrivateProfile.getUUID(), true);
+		ContentHashPastContent debitorPublicProfile = createPublicProfile(debitorPrivateProfile.getUUID(), false);
+		ContentHashPastContent creditorPublicProfile = createPublicProfile(creditorPrivateProfile.getUUID(), true);
 
-		Bill bill = createBill(creditorPrivateProfile.getUUID(), creditorPublicProfile.getId(), debitorPublicProfile.getId());
+		ContentHashPastContent bill = createBill(creditorPrivateProfile.getUUID(), creditorPublicProfile.getId(), debitorPublicProfile.getId());
 		
 		debitorPrivateProfile.setSelf_publicProfile_DHTHash(debitorPublicProfile.getId());
 		debitorPrivateProfile.addTransaction(bill.getId());
 		creditorPrivateProfile.setSelf_publicProfile_DHTHash(creditorPublicProfile.getId());
 		creditorPrivateProfile.addTransaction(bill.getId());
 		
-		createBootNode();
+		createBootNode(bindport, bootAddress, bootport);
 		
-		createStorage();
+		storePublicProfilesAndBill(debitorPublicProfile, creditorPublicProfile, bill);
+		
 		
 		createFreePastryNode();
 		createFreePastryNode();
@@ -76,18 +85,72 @@ public class Demo {
 	/**
 	 * This function create a freepastry node which will be the boot node
 	 */
-	private void createBootNode(){
+	private void createBootNode(int bindport, String bootAddress, int bootport) throws IOException {
+		InetSocketAddress bootInetSocketAddress = P2PUtil.createInetSocketAddress(bootAddress, bootport);
 		
-	}
-	
-	/**
-	 * This function creates a Past storage necessary to store the bill and the public profiles
-	 * before launching application for both users (debitor and creditor)
-	 */
-	private void createStorage(){
+		node = P2PUtil.createPastryNode(env, bindport);
 		
+		//It is created a factory to generate the keys of the values stored into the DHT. The algorithm used is SHA-1
+		idFactory = new PastryIdFactory(env);
+		
+		//The next step is create a Past instance for the self node
+		
+		//The storage directory where the Past instance will be created must be specified
+		String storageDirectory = "./storage" + node.getId().hashCode();
+		
+		Storage storage = P2PUtil.createPastStorage(storageDirectory, idFactory, node, true);
+		
+		past = P2PUtil.createPast(storage, idFactory, node);
+		
+		P2PUtil.connectNode(node, bootInetSocketAddress);
 	}
-	
+
+	private void storePublicProfilesAndBill(ContentHashPastContent debitorPublicProfile, ContentHashPastContent creditorPublicProfile, ContentHashPastContent bill){
+		past.insert(debitorPublicProfile, new Continuation<Boolean[], Exception>() {
+			
+			@Override
+			public void receiveResult(Boolean[] arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void receiveException(Exception arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+		
+		past.insert(creditorPublicProfile, new Continuation<Boolean[], Exception>() {
+			
+			@Override
+			public void receiveResult(Boolean[] arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void receiveException(Exception arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+		
+		past.insert(bill, new Continuation<Boolean[], Exception>() {
+			
+			@Override
+			public void receiveResult(Boolean[] arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+			
+			@Override
+			public void receiveException(Exception arg0) {
+				// TODO Auto-generated method stub
+				
+			}
+		});
+	}
 	
 	private void createFreePastryNode(){
 		

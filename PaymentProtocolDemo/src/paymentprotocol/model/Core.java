@@ -34,9 +34,9 @@ public class Core implements CoreObserver {
 	 * @param bootAddress
 	 * @param bootport
 	 */
-	public void connect(int bindport, String bootAdrress, int bootport){
+	public void connect(int bindport, String bootAddress, int bootport){
 		try {
-			p2pLayer.connect(bindport, bootAdrress, bootport, this);
+			p2pLayer.join(bindport, bootAddress, bootport, this);
 			
 			//cargar de la DHT el perfil publico
 			
