@@ -1,6 +1,9 @@
 package paymentprotocol.model;
 
 import paymentprotocol.model.files.local.PrivateProfile;
+import paymentprotocol.model.files.network.persistent.AccountLedgerEntry;
+import paymentprotocol.model.files.network.persistent.FAMEntry;
+import paymentprotocol.model.files.network.persistent.FBMEntry;
 import paymentprotocol.model.files.network.persistent.FileType;
 import paymentprotocol.model.messaging.NotificationPair;
 import paymentprotocol.model.p2p.P2PLayer;
@@ -89,6 +92,43 @@ public class Core implements CoreObserver {
 			//queda pendiente aniadir la llamada con el id de la transaccion. o quitarlo de los parametros
 			p2pLayer.get(key, "", FileType.BILL_ENTRY);
 	}
+	
+	private AccountLedgerEntry createLedgerEntryPE1(){
+		return null;
+	}
+	
+	private FBMEntry createFBMEntryPE1(){
+		return null;
+	}
+	
+	private FAMEntry createFAMEntryPE1(){
+		return null;
+	}
+	
+	private AccountLedgerEntry createLedgerEntryPE2(){
+		return null;
+	}
+	
+	private FBMEntry createFBMEntryPE2(){
+		return null;
+	}
+	
+	private FAMEntry createFAMEntryPE2(){
+		return null;
+	}
+	
+	private AccountLedgerEntry createLedgerEntryFinal(){
+		return null;
+	}
+	
+	private FBMEntry createFBMEntryFinal(){
+		return null;
+	}
+	
+	private FAMEntry createFAMEntryFinal(){
+		return null;
+	}
+		 
 	
 	/**
 	 * Method called when a notification is received from another node

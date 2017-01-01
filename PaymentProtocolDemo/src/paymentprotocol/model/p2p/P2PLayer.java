@@ -21,6 +21,11 @@ import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.persistence.Storage;
 
+/**
+ * This class is used to disengage P2P operations from application core
+ * @author yamal
+ *
+ */
 public class P2PLayer implements Application {
 	private Environment env;
 	private PastryIdFactory idFactory;
@@ -28,8 +33,10 @@ public class P2PLayer implements Application {
 	private PastryNode node;
 	private Endpoint endpoint;
 	
+	//Observer to communicate with application core
 	private CoreObserver coreObserver;
 	
+	//boolean set to true if the current node is connected to the FreePastry network
 	private boolean connected;
 	
 	/**
@@ -42,6 +49,10 @@ public class P2PLayer implements Application {
 		this.connected = false;
 	}
 	
+	/**
+	 * This method add the CoreObserver to this class to communicate with core application
+	 * @param coreObserver
+	 */
 	public void addObserver(CoreObserver coreObserver){
 		this.coreObserver = coreObserver;
 	}

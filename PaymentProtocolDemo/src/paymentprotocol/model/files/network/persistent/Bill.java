@@ -7,8 +7,8 @@ import rice.p2p.past.ContentHashPastContent;
 
 public class Bill extends ContentHashPastContent {
 	//private String fileType;
-	private String self_transRef; //cambiar tipo
-	private String other_transRef; //cambiar tipo
+	private String self_transRef;
+	private String other_transRef;
 	//private Id transRefHash;
 	private Id self_profile_DHTHash;
 	private Id other_profile_DHTHash;

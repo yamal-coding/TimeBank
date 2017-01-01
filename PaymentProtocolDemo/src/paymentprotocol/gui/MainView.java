@@ -4,18 +4,13 @@ import java.awt.EventQueue;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
-import java.awt.BorderLayout;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.JScrollBar;
 import javax.swing.JLabel;
 import javax.swing.JTextPane;
-import javax.swing.SwingConstants;
 import java.awt.GridLayout;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
-import java.awt.FlowLayout;
+import java.awt.BorderLayout;
 
 public class MainView {
 
@@ -49,12 +44,16 @@ public class MainView {
 	 */
 	private void initialize() {
 		frame = new JFrame();
-		frame.setBounds(100, 100, 450, 300);
+		frame.setBounds(100, 100, 587, 437);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.getContentPane().setLayout(new GridLayout(1, 0, 0, 0));
+		frame.getContentPane().setLayout(new BorderLayout(0, 0));
+		
+		JPanel panel = new JPanel();
+		frame.getContentPane().add(panel, BorderLayout.CENTER);
+		panel.setLayout(new GridLayout(1, 0, 0, 0));
 		
 		JPanel logPanel = new JPanel();
-		frame.getContentPane().add(logPanel);
+		panel.add(logPanel);
 		GridBagLayout gbl_logPanel = new GridBagLayout();
 		gbl_logPanel.columnWidths = new int[]{0, 0};
 		gbl_logPanel.rowHeights = new int[]{0, 0, 0};
@@ -78,7 +77,7 @@ public class MainView {
 		logPanel.add(logTextPane, gbc_logTextPane);
 		
 		JPanel paymentsPanel = new JPanel();
-		frame.getContentPane().add(paymentsPanel);
+		panel.add(paymentsPanel);
 		GridBagLayout gbl_paymentsPanel = new GridBagLayout();
 		gbl_paymentsPanel.columnWidths = new int[]{0, 0};
 		gbl_paymentsPanel.rowHeights = new int[]{0, 0, 0};
@@ -101,7 +100,7 @@ public class MainView {
 		paymentsPanel.add(paymentsSubpanel, gbc_paymentsSubpanel);
 		
 		JPanel notificationsPanel = new JPanel();
-		frame.getContentPane().add(notificationsPanel);
+		panel.add(notificationsPanel);
 		GridBagLayout gbl_notificationsPanel = new GridBagLayout();
 		gbl_notificationsPanel.columnWidths = new int[]{0, 0};
 		gbl_notificationsPanel.rowHeights = new int[]{0, 0, 0};

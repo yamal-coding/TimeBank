@@ -96,7 +96,7 @@ public class Demo {
 	}
 	
 	/**
-	 * This function create a freepastry node which will be the boot node
+	 * This function create a FreePastry node which will be the boot node
 	 */
 	private void createBootNode(int bindport, String bootAddress, int bootport) throws IOException {
 		InetSocketAddress bootInetSocketAddress = P2PUtil.createInetSocketAddress(bootAddress, bootport);
@@ -117,7 +117,13 @@ public class Demo {
 		
 		P2PUtil.connectNode(node, bootInetSocketAddress);
 	}
-
+	
+	/**
+	 * This method stores the profiles created by this class before running the simulation
+	 * @param debitorPublicProfile
+	 * @param creditorPublicProfile
+	 * @param bill
+	 */
 	private void storePublicProfilesAndBill(PastContent debitorPublicProfile, PastContent creditorPublicProfile, PastContent bill){
 		past.insert(debitorPublicProfile, new InsertContinuationImpl(FileType.PUBLIC_PROFILE_ENTRY.toString() + ".debitorPublicProfile"));
 		
@@ -127,17 +133,23 @@ public class Demo {
 		
 	}
 	
+	/**
+	 * Private class used in the insertion of the public profiles and bill. It receives the notification
+	 * of successful or failed storage after a time because this process is not instantaneous
+	 * @author yamal
+	 *
+	 */
 	private class InsertContinuationImpl implements Continuation<Boolean[], Exception> {
-		private String content;
+		private String contentID;
 		
-		public InsertContinuationImpl(String content) {
-			this.content = content;
+		public InsertContinuationImpl(String contentID) {
+			this.contentID = contentID;
 		}
 		
 		//Method called when there has been an error during insert call
 		@Override
 		public void receiveException(Exception arg0) {
-			System.err.println("Failed content " + content + " storage.");
+			System.err.println("Failed content " + contentID + " storage.");
 		}
 
 		//Method called when insert call has successfully finish. It receibes a Boolean array
@@ -147,17 +159,23 @@ public class Demo {
 		//true -> almacenado; false -> no almacenado
 		@Override
 		public void receiveResult(Boolean[] arg0) {
-			//The number of successfull stores is counted and printed
+			//The number of successful stores is counted and printed
 			int successfullStores = 0;
 			for (int i = 0; i < arg0.length; i++){
 				if (arg0[i].booleanValue())
 					successfullStores++;
 			}
 			
-			System.out.println("Content "+ content + " has been stored " + successfullStores + " times.");
+			System.out.println("Content "+ contentID + " has been stored " + successfullStores + " times.");
 		}		
 	}
 	
+	/**
+	 * Method used to create a PublicProfile instance
+	 * @param userUUID
+	 * @param isCreditor
+	 * @return PublicProfile
+	 */
 	private PublicProfile createPublicProfile(UUID userUUID, boolean isCreditor){	
 		String self_firstName, self_surnames, self_email, self_address;
 		int self_telephone;
@@ -196,10 +214,22 @@ public class Demo {
 				self_last_FAMEntryDHTHash, self_last_FBMEntryDHTHash);
 	}
 	
+	/**
+	 * This method creates a PrivateProfile for an user with a given UUID 
+	 * @param uuid
+	 * @return PrivateProfile
+	 */
 	private PrivateProfile createPrivateProfile(UUID uuid){
 		return new PrivateProfile(uuid);
 	}
 	
+	/**
+	 * This method creates a Bill with given information from public profile
+	 * @param uuid
+	 * @param creditorPublicProfile_DHTHash
+	 * @param debitorPublicProfile_DHTHash
+	 * @return Bill
+	 */
 	private Bill createBill(UUID uuid, Id creditorPublicProfile_DHTHash, Id debitorPublicProfile_DHTHash){
 		String self_transRef = "creditor sample bill";
 		String other_transRef = "debitor sample bill";
