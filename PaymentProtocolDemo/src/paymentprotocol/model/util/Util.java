@@ -22,6 +22,6 @@ public class Util {
 			return idFactory.buildId(uuid.toString() + FileType.BILL_ENTRY + transRef);
 			
 		//Default case is fileType == FileType.PUBLIC_PROFILE
-		return idFactory.buildId(uuid.toString() + FileType.PUBLIC_PROFILE);
+		return idFactory.buildId(uuid.toString() + FileType.PUBLIC_PROFILE_ENTRY);
 	}
 }

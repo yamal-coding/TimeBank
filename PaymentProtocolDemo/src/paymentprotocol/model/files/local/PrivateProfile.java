@@ -25,12 +25,16 @@ public class PrivateProfile {
 	public void setSelf_publicProfile_DHTHash(Id self_publicProfile_DHTHash){
 		this.self_publicProfile_DHTHash = self_publicProfile_DHTHash;
 	}
-
+	
 	public Id getSelf_publicProfile_DHTHash(){
 		return self_publicProfile_DHTHash;
 	}
 	
+	public List<Id> getTransactionsDHTHashes(){
+		return transactionsDHTHashes;
+	}
+	
 	public void addTransaction(Id bill_DHTHash){
-		this.transactionsDHTHashes.add(bill_DHTHash);
+		transactionsDHTHashes.add(bill_DHTHash);
 	}
 }

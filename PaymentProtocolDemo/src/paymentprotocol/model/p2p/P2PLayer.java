@@ -3,35 +3,47 @@ package paymentprotocol.model.p2p;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import paymentprotocol.model.messaging.NotificationHandler;
+import paymentprotocol.model.ConnectionReturnCode;
+import paymentprotocol.model.files.network.persistent.FileType;
+import paymentprotocol.model.messaging.NotificationPair;
 import paymentprotocol.observer.CoreObserver;
 import rice.Continuation;
 import rice.environment.Environment;
+import rice.p2p.commonapi.Application;
+import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
 import rice.p2p.commonapi.NodeHandle;
+import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.persistence.Storage;
 
-public class P2PLayer {
+public class P2PLayer implements Application {
 	private Environment env;
 	private PastryIdFactory idFactory;
 	private Past past;
 	private PastryNode node;
-	
-	private NotificationHandler notificationHandler;
+	private Endpoint endpoint;
 	
 	private CoreObserver coreObserver;
 	
 	private boolean connected;
 	
-	public P2PLayer(Environment env, CoreObserver coreObserver){
+	/**
+	 * Class constructor
+	 * @param env
+	 * @param coreObserver Observer to communicate with Core
+	 */
+	public P2PLayer(Environment env){
 		this.env = env;
-		this.coreObserver = coreObserver;
 		this.connected = false;
+	}
+	
+	public void addObserver(CoreObserver coreObserver){
+		this.coreObserver = coreObserver;
 	}
 	
 	/**
@@ -42,55 +54,75 @@ public class P2PLayer {
 	 * @param coreObserver
 	 * @throws IOException
 	 */
-	public void join(int bindport, String bootAddress, int bootport, CoreObserver coreObserver) throws IOException {
+	public ConnectionReturnCode join(int bindport, String bootAddress, int bootport, CoreObserver coreObserver) {
 		if (!connected) {
-			InetSocketAddress bootInetSocketAddress = P2PUtil.createInetSocketAddress(bootAddress, bootport);
-			
-			node = P2PUtil.createPastryNode(env, bindport);
-			
-			//It is created a factory to generate the keys of the values stored into the DHT. The algorithm used is SHA-1
-			idFactory = new PastryIdFactory(env);
-			
-			//The notification handler must be instantiated to handle the messages that the node receives and sends
-			notificationHandler = new NotificationHandler(node, coreObserver);
-			
-			//The next step is create a Past instance for the self node
-			
-			//The storage directory where the Past instance will be created must be specified
-			String storageDirectory = "./storage" + node.getId().hashCode();
-			//The storage to use in Past is initialized
-			Storage storage = P2PUtil.createPastStorage(storageDirectory, idFactory, node, true);
-			
-			//The Past implementation is instantiated
-			past = P2PUtil.createPast(storage, idFactory, node);
-			
-			//At this moment the PastryNode can join the network 
-			P2PUtil.connectNode(node, bootInetSocketAddress);
-			
-			//Now we can notify to the observers the connection success
-			connected = true;
+			try {
+				InetSocketAddress bootInetSocketAddress = P2PUtil.createInetSocketAddress(bootAddress, bootport);
+				
+				node = P2PUtil.createPastryNode(env, bindport);
+				
+				//It is created a factory to generate the keys of the values stored into the DHT. The algorithm used is SHA-1
+				idFactory = new PastryIdFactory(env);
+				
+				//The next step is create a Past instance for the self node
+				
+				//The storage directory where the Past instance will be created must be specified
+				String storageDirectory = "./storage" + node.getId().hashCode();
+				//The storage to use in Past is initialized
+				Storage storage = P2PUtil.createPastStorage(storageDirectory, idFactory, node, true);
+				
+				//The Past implementation is instantiated
+				past = P2PUtil.createPast(storage, idFactory, node);
+				
+				//At this moment the PastryNode can join the network 
+				P2PUtil.connectNode(node, bootInetSocketAddress);
+				
+				//The endpoint is initialized to allow receiving and sending messages from others and to other nodes
+				this.endpoint = node.buildEndpoint(this, "myinstance");
+				this.endpoint.register();
+				
+				//Now we can notify to the observers the connection success
+				connected = true;
+				
+				return ConnectionReturnCode.CONNECTION_SUCCESFUL;
+			}
+			catch (IOException e){
+				return ConnectionReturnCode.FAILED_CONNECTION;
+			}
 		}
-	}
-	
-	public void sendMessage(NodeHandle nh, Message msg){
-		notificationHandler.sendNotification(nh, msg);
-	}
-	
-	public void put(PastContent content, String contentID){
-		past.insert(content, new InsertContinuationImpl(contentID));
-	}
-	
-	private class InsertContinuationImpl implements Continuation<Boolean[], Exception> {
-		private String content;
 		
-		public InsertContinuationImpl(String content) {
-			this.content = content;
+		return ConnectionReturnCode.NODE_ALREADY_CONNECTED;
+	}
+	
+	/**
+	 * Method called to store some content into the DHT
+	 * @param content
+	 * @param contentID
+	 * @param fileType
+	 */
+	public void put(PastContent content, String contentID, FileType fileType){
+		past.insert(content, new InsertContinuationImpl(contentID, fileType));
+	}
+	
+	/**
+	 * Private class used to insert some content into the DHT and received the notification
+	 * of failure or successful because this process is not instantaneous
+	 * @author yamal
+	 *
+	 */
+	private class InsertContinuationImpl implements Continuation<Boolean[], Exception> {
+		private String contentID;
+		private FileType fileType;
+		
+		public InsertContinuationImpl(String contentID, FileType fileType) {
+			this.contentID = contentID;
+			this.fileType = fileType;
 		}
 		
 		//Method called when there has been an error during insert call
 		@Override
 		public void receiveException(Exception arg0) {
-			coreObserver.onFinishedStorage("Failed content " + content + " storage.", false);
+			coreObserver.onFinishedStorage("Failed content " + fileType + "." + contentID + " storage.", false);
 		}
 
 		//Method called when insert call has successfully finish. It receibes a Boolean array
@@ -102,30 +134,102 @@ public class P2PLayer {
 		public void receiveResult(Boolean[] arg0) {
 			//The number of successfull stores is counted and printed
 			int successfullStores = 0;
-			for (int i = 0; i < arg0.length; i++){
+			for (int i = 0; i < arg0.length; i++)
 				if (arg0[i].booleanValue())
 					successfullStores++;
-			}
 			
-			coreObserver.onFinishedStorage("Content "+ content + " has been stored " + successfullStores + " times.", false);
+			coreObserver.onFinishedStorage("Content "+ fileType + "." + contentID + " has been stored " + successfullStores + " times.", false);
 		}		
 	}
 	
+	/**
+	 * Methd called to get some content from the DHT
+	 * @param key
+	 * @param contentID
+	 * @param fileType
+	 */
+	public void get(Id key, String contentID, FileType fileType ){
+		past.lookup(key, new LookupContinuationImpl(contentID, fileType));
+	}
 	
-	public void get(Id key){
-		past.lookup(key, new Continuation<PastContent, Exception>(){
+	/**
+	 * Private class used to lookup some content from the DHT and received the notification
+	 * of failure or the requested object because this process is not instantaneous
+	 * @author yamal
+	 *
+	 */
+	private class LookupContinuationImpl implements Continuation<PastContent, Exception>{
+		private String contentID;
+		private FileType fileType;
+		
+		public LookupContinuationImpl(String contentID, FileType fileType){
+			this.contentID = contentID;
+			this.fileType = fileType;
+		}
+		
+		//Method called when there has been an error during lookup call
+		@Override
+		public void receiveException(Exception arg0) {
+			String errorMsg = "Failed content " + fileType + "." + contentID + " lookup.";
 			
-			//Metodo que se llama cuando ha habido algun error en el lookup de un contenido en la DHT
-			@Override
-			public void receiveException(Exception arg0) {
-				//Notify to Core
+			switch(fileType){
+			case BILL_ENTRY: coreObserver.onLookupBill(null, true, errorMsg); break;
+			case ACCOUNT_LEDGER_ENTRY: coreObserver.onLookupAccountLedger(null, true, errorMsg); break;
+			case FAM_ENTRY: coreObserver.onLookupFAMEntry(null, true, errorMsg); break;
+			case FBM_ENTRY: coreObserver.onLookupFBMEntry(null, true, errorMsg); break;
+			default: //PUBLIC_PROFILE_ENTRY
+				coreObserver.onLookupPublicProfile(null, true, errorMsg);
 			}
-			//Metodo que se llama cuando el resultado a sido devuelto por la DHT
-			@Override
-			public void receiveResult(PastContent arg0) {
-				//Notify to Core
-			}
+		}
+		
+		//Method called when lookup has finished successfully. It receives the requested object
+		//as a PastContent instance
+		@Override
+		public void receiveResult(PastContent arg0) {
+			String successfullMsg = "Successful content " + fileType + "." + contentID + " lookup";
 			
-		});
+			switch(fileType){
+			case BILL_ENTRY: coreObserver.onLookupBill(arg0, false, successfullMsg); break;
+			case ACCOUNT_LEDGER_ENTRY: coreObserver.onLookupAccountLedger(arg0, false, successfullMsg); break;
+			case FAM_ENTRY: coreObserver.onLookupFAMEntry(arg0, false, successfullMsg); break;
+			case FBM_ENTRY: coreObserver.onLookupFBMEntry(arg0, false, successfullMsg); break;
+			default: //PUBLIC_PROFILE_ENTRY
+				coreObserver.onLookupPublicProfile(arg0, false, successfullMsg);
+			}
+		}
+	}
+
+	/**
+	 * Method used to send a message to a concrete node through his NodeHandle
+	 * @param nh
+	 * @param msg
+	 */
+	public void sendNotification(NodeHandle nh, Message msg){
+		endpoint.route(null, msg, nh);
+	}
+	
+	/**
+	 * This method is called when a Message object is received from other PastryNode
+	 */
+	@Override
+	public void deliver(Id arg0, Message arg1) {
+		try {
+			NotificationPair notificationPair = (NotificationPair) arg1;
+			coreObserver.onReceiveNotification(notificationPair);
+		}
+		catch (ClassCastException e){
+			
+		}
+	}
+
+	@Override
+	public boolean forward(RouteMessage arg0) {
+		return true;
+	}
+
+	@Override
+	public void update(NodeHandle arg0, boolean arg1) {
+		// TODO Auto-generated method stub
+		
 	}
 }

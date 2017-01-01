@@ -27,7 +27,7 @@ import rice.persistence.StorageManagerImpl;
  */
 public class P2PUtil {
 	/**
-	 * Ths method returns an instance of a InetSocketAddress object. It is used to create a PastryNode
+	 * This method returns an instance of a InetSocketAddress object. It is used to create a PastryNode
 	 * @param bootAddress
 	 * @param bootport
 	 * @return InetSocketAddress

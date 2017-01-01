@@ -5,10 +5,13 @@ import java.net.InetSocketAddress;
 import java.sql.Timestamp;
 import java.util.UUID;
 
+import paymentprotocol.control.Controller;
+import paymentprotocol.model.Core;
 import paymentprotocol.model.files.local.PrivateProfile;
 import paymentprotocol.model.files.network.persistent.Bill;
 import paymentprotocol.model.files.network.persistent.FileType;
 import paymentprotocol.model.files.network.persistent.PublicProfile;
+import paymentprotocol.model.p2p.P2PLayer;
 import paymentprotocol.model.p2p.P2PUtil;
 import paymentprotocol.model.util.Util;
 import rice.Continuation;
@@ -47,7 +50,6 @@ public class Demo {
 		try {
 			d.runDemo(9001, "192.168.1.37", 9001);
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -76,12 +78,21 @@ public class Demo {
 		
 		storePublicProfilesAndBill(debitorPublicProfile, creditorPublicProfile, bill);
 		
+		P2PLayer debitorP2PLayer = new P2PLayer(new Environment());
+		P2PLayer creditorP2PLayer = new P2PLayer(new Environment());
+		Core debitorCore = new Core(debitorP2PLayer, debitorPrivateProfile);
+		Core creditorCore = new Core(creditorP2PLayer, creditorPrivateProfile);
 		
-		//createFreePastryNode();
-		//createFreePastryNode();
+		Controller debitorController = new Controller(debitorCore);
+		Controller creditorController = new Controller(creditorCore);
 		
-		run();
-		run();
+		//PENDING
+		
+		//gui debitor
+		//gui creditor
+		
+		run();//run debitor
+		run();//run creditor
 	}
 	
 	/**
@@ -108,9 +119,9 @@ public class Demo {
 	}
 
 	private void storePublicProfilesAndBill(PastContent debitorPublicProfile, PastContent creditorPublicProfile, PastContent bill){
-		past.insert(debitorPublicProfile, new InsertContinuationImpl(FileType.PUBLIC_PROFILE.toString() + ".debitorPublicProfile"));
+		past.insert(debitorPublicProfile, new InsertContinuationImpl(FileType.PUBLIC_PROFILE_ENTRY.toString() + ".debitorPublicProfile"));
 		
-		past.insert(creditorPublicProfile, new InsertContinuationImpl(FileType.PUBLIC_PROFILE.toString() + ".creditorPublicProfile"));
+		past.insert(creditorPublicProfile, new InsertContinuationImpl(FileType.PUBLIC_PROFILE_ENTRY.toString() + ".creditorPublicProfile"));
 		
 		past.insert(bill, new InsertContinuationImpl(FileType.BILL_ENTRY.toString() + ".Bill"));
 		
@@ -147,10 +158,6 @@ public class Demo {
 		}		
 	}
 	
-	private void createFreePastryNode(){
-		
-	}
-	
 	private PublicProfile createPublicProfile(UUID userUUID, boolean isCreditor){	
 		String self_firstName, self_surnames, self_email, self_address;
 		int self_telephone;
@@ -181,7 +188,7 @@ public class Demo {
 		Id self_last_FAMEntryDHTHash = Util.makeDHTHash(idFactory, userUUID, 1, null, FileType.FAM_ENTRY);
 		Id self_last_FBMEntryDHTHash = Util.makeDHTHash(idFactory, userUUID, 1, null, FileType.FBM_ENTRY);
 		
-		Id debitorPublicProfile_DHTHash = Util.makeDHTHash(idFactory, userUUID, 0, null, FileType.PUBLIC_PROFILE);
+		Id debitorPublicProfile_DHTHash = Util.makeDHTHash(idFactory, userUUID, 0, null, FileType.PUBLIC_PROFILE_ENTRY);
 		
 		return new PublicProfile(debitorPublicProfile_DHTHash, 
 				self_firstName, self_surnames, self_telephone, self_email, self_address, 

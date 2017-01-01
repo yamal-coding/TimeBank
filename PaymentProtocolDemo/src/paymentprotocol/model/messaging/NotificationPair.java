@@ -3,6 +3,12 @@ package paymentprotocol.model.messaging;
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
 
+/**
+ * Class that implements Message Interface. It represents a message between two FreePastry nodes
+ * and it cointains a hash and a id of a content previously stored into the DHT
+ * @author yamal
+ *
+ */
 public class NotificationPair implements Message {
 	private String id; //cambiar tipo
 	private Id hash;
