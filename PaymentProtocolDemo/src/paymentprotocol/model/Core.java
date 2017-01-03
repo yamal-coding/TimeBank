@@ -1,10 +1,15 @@
 package paymentprotocol.model;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import paymentprotocol.model.files.local.PrivateProfile;
 import paymentprotocol.model.files.network.persistent.AccountLedgerEntry;
+import paymentprotocol.model.files.network.persistent.Bill;
 import paymentprotocol.model.files.network.persistent.FAMEntry;
 import paymentprotocol.model.files.network.persistent.FBMEntry;
 import paymentprotocol.model.files.network.persistent.FileType;
+import paymentprotocol.model.files.network.persistent.PublicProfile;
 import paymentprotocol.model.messaging.NotificationPair;
 import paymentprotocol.model.p2p.P2PLayer;
 import paymentprotocol.observer.CoreObserver;
@@ -27,14 +32,22 @@ public class Core implements CoreObserver {
 	
 	//Information of the current user
 	private PrivateProfile privateProfile;
+	private PublicProfile publicProfile;
+	
+	//User's bills
+	private volatile Map<String, Bill> loadedBills;
+	private volatile int billsToload;
+	private volatile int loadBillTrials;
+	
 	
 	/**
 	 * Core constructor
 	 * @param p2pLayer
 	 */
 	public Core(P2PLayer p2pLayer, PrivateProfile privateProfile){
-		//hay que hacer que el id de cada nodo se genere con un hash de un UUUID
-		//para que no se repitan
+		this.loadedBills = new HashMap<String, Bill>();
+		this.billsToload = privateProfile.getTransactionsDHTHashes().size();
+		this.loadBillTrials = 0;
 		this.p2pLayer = p2pLayer;
 		this.privateProfile = privateProfile;
 		this.p2pLayer.addObserver((this));
@@ -44,7 +57,7 @@ public class Core implements CoreObserver {
 	 * Method to add the GUIObserver to this class
 	 * @param obs
 	 */
-	public void addObserver(GUIObserver obs){
+	public synchronized void addObserver(GUIObserver obs){
 		this.guiObserver = obs;
 	}
 	
@@ -54,30 +67,43 @@ public class Core implements CoreObserver {
 	 * @param bootAddress
 	 * @param bootport
 	 */
-	public void connect(int bindport, String bootAddress, int bootport){
+	public synchronized void connect(int bindport, String bootAddress, int bootport){
 		switch(p2pLayer.join(bindport, bootAddress, bootport, this)){
-		case NODE_ALREADY_CONNECTED:{
-			//notify to the GUI
-		} break;
-		case FAILED_CONNECTION: {
-			//notify to the GUI
-		} break;
-		default: //CONNECTION_SUCCESSFUL
-			//User public profile is loaded from DHT
-			loadPublicProfile();
-			
-			//establecer un punto de espera hasta que se haya cargado el perfil
-			//y despues cargar las facturas
-			
-			//User transactions are loaded from DHT
-			if (privateProfile.getTransactionsDHTHashes().isEmpty())
-				//notify to the GUI that there are  not any pending transaction
-				guiObserver.onNoPendingTransactions();
-			else
-				loadTransactions();
+			case NODE_ALREADY_CONNECTED:
+				guiObserver.onNodeAlreadyConnected();
+				break;
+			case FAILED_CONNECTION:
+				guiObserver.failedConnection();
+				break;
+			default: //CONNECTION_SUCCESSFUL
+				//User public profile is loaded from DHT
+				loadPublicProfile();
+
+				try{
+					//It is not necessary a successfully public profile load to load transactions
+					//but the response has to be received firstly
+					wait();
+					/*
+					//User transactions are loaded from DHT
+					if (privateProfile.getTransactionsDHTHashes().isEmpty())
+						//notify to the GUI that there are  not any pending transaction
+						guiObserver.onNoPendingTransactions();
+					else {
+						loadBillTrials = 0;
+						loadTransactions();
+						//It is necessary to wait for having all bills loaded
+						//There may be bills that are not loaded but an error is returned in that case
+						wait();
+					}*/
+				} catch (InterruptedException e) {
+					//Notify error to the GUI
+				}
 		}
 	}
 	
+	/**
+	 * This method calls p2p layer to look up the user public profile in DHT
+	 */
 	private void loadPublicProfile(){
 		p2pLayer.get(privateProfile.getSelf_publicProfile_DHTHash(), "UserPublicProfile", FileType.PUBLIC_PROFILE_ENTRY);
 	}
@@ -134,7 +160,7 @@ public class Core implements CoreObserver {
 	 * Method called when a notification is received from another node
 	 */
 	@Override
-	public void onReceiveNotification(NotificationPair notificationPair) {
+	public synchronized void onReceiveNotification(NotificationPair notificationPair) {
 		guiObserver.onReceiveNotification();
 	}
 
@@ -145,7 +171,7 @@ public class Core implements CoreObserver {
 	 * @param error
 	 */
 	@Override
-	public void onFinishedStorage(String msg, boolean error) {
+	public synchronized void onFinishedStorage(String msg, boolean error) {
 		if (error){//there has been errors during the "insert" call into the DHT
 			
 		}
@@ -162,12 +188,30 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public void onLookupBill(PastContent bill, boolean error, String msg) {
+	public synchronized void onLookupBill(PastContent bill, boolean error, String msg) {
 		if (error){
-			
+			//Handle error
 		}
 		else{
-			
+			try {
+				Bill billEntry = (Bill) bill;
+				//to do
+				if (!loadedBills.containsKey(billEntry.getSelf_transRef()))
+					loadedBills.put(billEntry.getSelf_transRef(), billEntry);
+				else {
+					//Bill already loaded
+				}
+			}
+			catch (ClassCastException e){
+				//Handle error
+			}
+		}
+		
+		loadBillTrials++;
+		
+		if (loadBillTrials == billsToload){
+			//notify to this slept thread waiting
+			this.notify();
 		}
 	}
 
@@ -179,12 +223,18 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public void onLookupAccountLedger(PastContent accountLedger, boolean error, String msg) {
+	public synchronized void onLookupAccountLedger(PastContent accountLedger, boolean error, String msg) {
 		if (error){
-			
+			//Handle error
 		}
 		else{
-			
+			try {
+				AccountLedgerEntry ledger = (AccountLedgerEntry) accountLedger;
+				//to do
+			}
+			catch (ClassCastException e){
+				//Handle error
+			}
 		}
 	}
 
@@ -196,12 +246,18 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public void onLookupFAMEntry(PastContent famEntry, boolean error, String msg) {
+	public synchronized void onLookupFAMEntry(PastContent famEntry, boolean error, String msg) {
 		if (error){
-			
+			//Handle error
 		}
 		else{
-			
+			try {
+				FAMEntry fam = (FAMEntry) famEntry;
+				//to do
+			}
+			catch (ClassCastException e){
+				//Handle error
+			}
 		}
 	}
 
@@ -213,12 +269,18 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public void onLookupFBMEntry(PastContent fbmEntry, boolean error, String msg) {
+	public synchronized void onLookupFBMEntry(PastContent fbmEntry, boolean error, String msg) {
 		if (error){
-			
+			//Handle error
 		}
 		else{
-			
+			try {
+				FBMEntry fbm = (FBMEntry) fbmEntry;
+				//to do
+			}
+			catch (ClassCastException e){
+				//Handle error
+			}
 		}
 	}
 
@@ -230,12 +292,19 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public void onLookupPublicProfile(PastContent publicProfile, boolean error, String msg) {
+	public synchronized void onLookupPublicProfile(PastContent publicProfile, boolean error, String msg) {
 		if (error){
 			
 		}
 		else{
-			
+			try{
+				this.publicProfile = (PublicProfile) publicProfile;
+				guiObserver.onPublicProfileLoaded(this.publicProfile.getSelf_firstName(), this.publicProfile.getSelf_surnames());
+			}
+			catch (ClassCastException e) {
+				//Handle error
+			}
 		}
+		notify();
 	}
 }

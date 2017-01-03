@@ -6,6 +6,7 @@ import java.sql.Timestamp;
 import java.util.UUID;
 
 import paymentprotocol.control.Controller;
+import paymentprotocol.gui.TerminalGUI;
 import paymentprotocol.model.Core;
 import paymentprotocol.model.files.local.PrivateProfile;
 import paymentprotocol.model.files.network.persistent.Bill;
@@ -48,7 +49,7 @@ public class Demo {
 	public static void main(String[] args){
 		Demo d = new Demo();
 		try {
-			d.runDemo(9001, "192.168.1.37", 9001);
+			d.runDemo(9003, "192.168.1.37", 9003);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -86,6 +87,9 @@ public class Demo {
 		Controller debitorController = new Controller(debitorCore);
 		Controller creditorController = new Controller(creditorCore);
 		
+		/*PEQUENIA PRUEBA*/
+		TerminalGUI guiCreditorExample = new TerminalGUI(creditorController, 9004, "192.168.1.37", 9003);
+		
 		//PENDING
 		
 		//gui debitor
@@ -93,6 +97,7 @@ public class Demo {
 		
 		run();//run debitor
 		run();//run creditor
+		System.exit(0);
 	}
 	
 	/**

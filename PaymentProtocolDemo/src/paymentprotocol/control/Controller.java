@@ -11,6 +11,10 @@ public class Controller {
 		this.core = core;
 	}
 	
+	public void connect(int bindport, String bootAddress, int bootport){
+		core.connect(bindport, bootAddress, bootport);
+	}
+	
 	public void addObserver(GUIObserver obs){
 		core.addObserver(obs);
 	}
