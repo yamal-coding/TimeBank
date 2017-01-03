@@ -16,10 +16,15 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 
 import javax.swing.JScrollPane;
+import javax.swing.BoxLayout;
+import java.awt.FlowLayout;
+import javax.swing.JButton;
 
 public class MainView extends JFrame implements GUIObserver{
 
 	private JTextPane logTextPane;
+	JLabel nameLabel;
+	JLabel surnameLabel;
 	
 	private Controller c;
 
@@ -53,14 +58,35 @@ public class MainView extends JFrame implements GUIObserver{
 		this.getContentPane().add(panel, BorderLayout.CENTER);
 		panel.setLayout(new GridLayout(1, 0, 0, 0));
 		
-		JPanel logPanel = new JPanel();
-		panel.add(logPanel);
-		GridBagLayout gbl_logPanel = new GridBagLayout();
-		gbl_logPanel.columnWidths = new int[]{0, 0};
-		gbl_logPanel.rowHeights = new int[]{0, 0, 0, 0, 0};
-		gbl_logPanel.columnWeights = new double[]{1.0, Double.MIN_VALUE};
-		gbl_logPanel.rowWeights = new double[]{0.0, 1.0, 1.0, 0.0, Double.MIN_VALUE};
-		logPanel.setLayout(gbl_logPanel);
+		JPanel profilePanel = new JPanel();
+		panel.add(profilePanel);
+		GridBagLayout gbl_profilePanel = new GridBagLayout();
+		gbl_profilePanel.columnWidths = new int[]{0, 0};
+		gbl_profilePanel.rowHeights = new int[]{0, 0, 0};
+		gbl_profilePanel.columnWeights = new double[]{1.0, Double.MIN_VALUE};
+		gbl_profilePanel.rowWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
+		profilePanel.setLayout(gbl_profilePanel);
+		
+		JLabel publicProfileLabel = new JLabel("Public Profile");
+		GridBagConstraints gbc_publicProfileLabel = new GridBagConstraints();
+		gbc_publicProfileLabel.insets = new Insets(0, 0, 5, 0);
+		gbc_publicProfileLabel.gridx = 0;
+		gbc_publicProfileLabel.gridy = 0;
+		profilePanel.add(publicProfileLabel, gbc_publicProfileLabel);
+		
+		JPanel profileSubPanel = new JPanel();
+		GridBagConstraints gbc_profileSubPanel = new GridBagConstraints();
+		gbc_profileSubPanel.fill = GridBagConstraints.BOTH;
+		gbc_profileSubPanel.gridx = 0;
+		gbc_profileSubPanel.gridy = 1;
+		profilePanel.add(profileSubPanel, gbc_profileSubPanel);
+		profileSubPanel.setLayout(new GridLayout(2, 1, 0, 0));
+		
+		nameLabel = new JLabel("");
+		profileSubPanel.add(nameLabel);
+		
+		surnameLabel = new JLabel("");
+		profileSubPanel.add(surnameLabel);
 		
 		JPanel paymentsPanel = new JPanel();
 		panel.add(paymentsPanel);
@@ -71,7 +97,7 @@ public class MainView extends JFrame implements GUIObserver{
 		gbl_paymentsPanel.rowWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
 		paymentsPanel.setLayout(gbl_paymentsPanel);
 		
-		JLabel paymentsLabel = new JLabel("Payments");
+		JLabel paymentsLabel = new JLabel("Transactions");
 		GridBagConstraints gbc_paymentsLabel = new GridBagConstraints();
 		gbc_paymentsLabel.insets = new Insets(0, 0, 5, 0);
 		gbc_paymentsLabel.gridx = 0;
@@ -109,7 +135,6 @@ public class MainView extends JFrame implements GUIObserver{
 		notificationsPanel.add(notificationsSubpanel, gbc_notificationsSubpanel);
 		
 		this.setVisible(true);
-		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 	}
 
 	@Override
@@ -135,8 +160,9 @@ public class MainView extends JFrame implements GUIObserver{
 
 	@Override
 	public void onPublicProfileLoaded(String name, String surname) {
-		logTextPane.setText(logTextPane.getText() + "Public profile loaded succesfully. Name: "
-				+ name + " Surname: " + surname + "\n");
+		logTextPane.setText(logTextPane.getText() + "Public profile loaded succesfully.\n");
+		nameLabel.setText("Name: " + name);
+		surnameLabel.setText("Surame: " + surname);
 	}
 
 	@Override

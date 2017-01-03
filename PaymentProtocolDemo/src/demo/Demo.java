@@ -1,6 +1,5 @@
 package demo;
 
-import java.awt.EventQueue;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.Timestamp;
