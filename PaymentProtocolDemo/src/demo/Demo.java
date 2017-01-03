@@ -1,11 +1,13 @@
 package demo;
 
+import java.awt.EventQueue;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.sql.Timestamp;
 import java.util.UUID;
 
 import paymentprotocol.control.Controller;
+import paymentprotocol.gui.MainView;
 import paymentprotocol.gui.TerminalGUI;
 import paymentprotocol.model.Core;
 import paymentprotocol.model.files.local.PrivateProfile;
@@ -87,17 +89,18 @@ public class Demo {
 		Controller debitorController = new Controller(debitorCore);
 		Controller creditorController = new Controller(creditorCore);
 		
-		/*PEQUENIA PRUEBA*/
-		TerminalGUI guiCreditorExample = new TerminalGUI(creditorController, 9004, "192.168.1.37", 9003);
+		/*
+		//Console gui
+		TerminalGUI creditorConsoleGUI = new TerminalGUI(creditorController, 9004, "192.168.1.37", 9003);
+		TerminalGUI debitorConsoleGUI = new TerminalGUI(debitorController, 9005, "192.168.1.37", 9003);
 		
-		//PENDING
+		//System.exit(0);
+		*/
 		
-		//gui debitor
-		//gui creditor
+		//Graphic GUI
+		MainView creditorGraphicGUI = new MainView(creditorController, 9004, "192.168.1.37", 9003);
+		MainView debitorGraphicGUI = new MainView(debitorController, 9005, "192.168.1.37", 9003);
 		
-		run();//run debitor
-		run();//run creditor
-		System.exit(0);
 	}
 	
 	/**

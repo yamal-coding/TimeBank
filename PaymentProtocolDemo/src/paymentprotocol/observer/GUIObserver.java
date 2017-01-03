@@ -11,5 +11,7 @@ public interface GUIObserver {
 	
 	public void onPublicProfileLoaded(String name, String surname);
 	
+	public void onTransactionLoaded(String transref);
+	
 	public void onFailedPublicProfileFailLoad();
 }

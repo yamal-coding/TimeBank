@@ -39,6 +39,11 @@ public class TerminalGUI implements GUIObserver {
 	}
 	
 	@Override
+	public void onTransactionLoaded(String transref){
+		System.out.println("Bill: " + transref);
+	}
+	
+	@Override
 	public void onFailedPublicProfileFailLoad(){
 		System.err.println("Error al cargar el perfil publico");
 	}

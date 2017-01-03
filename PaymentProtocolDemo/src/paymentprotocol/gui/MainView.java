@@ -1,80 +1,66 @@
 package paymentprotocol.gui;
 
-import java.awt.EventQueue;
-
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JTextPane;
+
+import paymentprotocol.control.Controller;
+import paymentprotocol.observer.GUIObserver;
+
 import java.awt.GridLayout;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.awt.BorderLayout;
+import java.awt.Dimension;
 
-public class MainView {
+import javax.swing.JScrollPane;
 
-	private JFrame frame;
+public class MainView extends JFrame implements GUIObserver{
 
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					MainView window = new MainView();
-					window.frame.setVisible(true);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
+	private JTextPane logTextPane;
+	
+	private Controller c;
 
 	/**
 	 * Create the application.
 	 */
-	public MainView() {
+	public MainView(Controller c, int bindport, String bootAddress, int bootport) {
+		super("Time bank");
 		initialize();
+		this.c = c;
+		this.c.addObserver(this);
+		this.c.connect(bindport, bootAddress, bootport);
 	}
 
 	/**
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		frame = new JFrame();
-		frame.setBounds(100, 100, 587, 437);
-		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.getContentPane().setLayout(new BorderLayout(0, 0));
+		this.setBounds(100, 100, 587, 437);
+		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+		this.getContentPane().setLayout(new BorderLayout(0, 0));
+		
+		logTextPane = new JTextPane();
+		logTextPane.setEditable(false);
+		
+		JScrollPane scrollPane = new JScrollPane(logTextPane);
+		scrollPane.setPreferredSize(new Dimension(this.getSize().width, this.getSize().height / 3));
+		this.getContentPane().add(scrollPane, BorderLayout.SOUTH);
 		
 		JPanel panel = new JPanel();
-		frame.getContentPane().add(panel, BorderLayout.CENTER);
+		this.getContentPane().add(panel, BorderLayout.CENTER);
 		panel.setLayout(new GridLayout(1, 0, 0, 0));
 		
 		JPanel logPanel = new JPanel();
 		panel.add(logPanel);
 		GridBagLayout gbl_logPanel = new GridBagLayout();
 		gbl_logPanel.columnWidths = new int[]{0, 0};
-		gbl_logPanel.rowHeights = new int[]{0, 0, 0};
+		gbl_logPanel.rowHeights = new int[]{0, 0, 0, 0, 0};
 		gbl_logPanel.columnWeights = new double[]{1.0, Double.MIN_VALUE};
-		gbl_logPanel.rowWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
+		gbl_logPanel.rowWeights = new double[]{0.0, 1.0, 1.0, 0.0, Double.MIN_VALUE};
 		logPanel.setLayout(gbl_logPanel);
-		
-		JLabel logLabel = new JLabel("System logs");
-		GridBagConstraints gbc_logLabel = new GridBagConstraints();
-		gbc_logLabel.insets = new Insets(0, 0, 5, 0);
-		gbc_logLabel.gridx = 0;
-		gbc_logLabel.gridy = 0;
-		logPanel.add(logLabel, gbc_logLabel);
-		
-		JTextPane logTextPane = new JTextPane();
-		logTextPane.setEditable(false);
-		GridBagConstraints gbc_logTextPane = new GridBagConstraints();
-		gbc_logTextPane.fill = GridBagConstraints.BOTH;
-		gbc_logTextPane.gridx = 0;
-		gbc_logTextPane.gridy = 1;
-		logPanel.add(logTextPane, gbc_logTextPane);
 		
 		JPanel paymentsPanel = new JPanel();
 		panel.add(paymentsPanel);
@@ -122,6 +108,45 @@ public class MainView {
 		gbc_notificationsSubpanel.gridy = 1;
 		notificationsPanel.add(notificationsSubpanel, gbc_notificationsSubpanel);
 		
+		this.setVisible(true);
+		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
+	}
+
+	@Override
+	public void failedConnection() {
+		logTextPane.setText(logTextPane.getText() + "Failed connection: internal error.\n");
+	}
+
+	@Override
+	public void onNoPendingTransactions() {
+		logTextPane.setText(logTextPane.getText() + "There is not any transaction to load.\n");
+	}
+
+	@Override
+	public void onReceiveNotification() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onNodeAlreadyConnected() {
+		logTextPane.setText(logTextPane.getText() + "Failed connection: Node already connected.\n");
+	}
+
+	@Override
+	public void onPublicProfileLoaded(String name, String surname) {
+		logTextPane.setText(logTextPane.getText() + "Public profile loaded succesfully. Name: "
+				+ name + " Surname: " + surname + "\n");
+	}
+
+	@Override
+	public void onTransactionLoaded(String transref) {
+		logTextPane.setText(logTextPane.getText() + "Bill " + transref + " loaded.\n");
+	}
+
+	@Override
+	public void onFailedPublicProfileFailLoad() {
+		logTextPane.setText(logTextPane.getText() + "Public profile falied load.\n");
 	}
 
 }

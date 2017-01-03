@@ -1,6 +1,7 @@
 package paymentprotocol.model;
 
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
 import paymentprotocol.model.files.local.PrivateProfile;
@@ -77,13 +78,16 @@ public class Core implements CoreObserver {
 				break;
 			default: //CONNECTION_SUCCESSFUL
 				//User public profile is loaded from DHT
+				//The implemented observer method "onLookupPublicProfile" notifies the error
+				//or successful to the GUI
 				loadPublicProfile();
 
 				try{
 					//It is not necessary a successfully public profile load to load transactions
-					//but the response has to be received firstly
+					//but the response has to be received firstly. The implemented observer method
+					//"onLookupPublicProfile" wakes up this waiting thread
 					wait();
-					/*
+					
 					//User transactions are loaded from DHT
 					if (privateProfile.getTransactionsDHTHashes().isEmpty())
 						//notify to the GUI that there are  not any pending transaction
@@ -93,8 +97,20 @@ public class Core implements CoreObserver {
 						loadTransactions();
 						//It is necessary to wait for having all bills loaded
 						//There may be bills that are not loaded but an error is returned in that case
+						//The implemented observer method onLookupBill wakes up this waiting thread
+						//when the last bill is loaded from DHT
 						wait();
-					}*/
+						
+						/*Iterator it = loadedBills.keySet().iterator();
+						while(it.hasNext()){
+							Map.Entry pair = (Map.Entry) it.next();
+							guiObserver.onTransactionLoaded(((Bill) pair.getValue()).getSelf_transRef());
+						}*/
+						
+						for (Map.Entry<String, Bill> entry : loadedBills.entrySet())
+							guiObserver.onTransactionLoaded(entry.getValue().getSelf_transRef());
+						
+					}
 				} catch (InterruptedException e) {
 					//Notify error to the GUI
 				}
