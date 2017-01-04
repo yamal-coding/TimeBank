@@ -30,12 +30,18 @@ public class FeedbackInput extends JDialog implements ActionListener {
 	private Degree selectedDegree;
 	
 	private enum Degree {
-		NONE("0"), ONE("1"), TWO("2"), THREE("3"), FOUR("4"), FIVE("5");
+		NONE("0", 0), ONE("1", 1), TWO("2", 2), THREE("3", 3), FOUR("4", 4), FIVE("5", 5);
 		
 		private String name;
+		private int index;
 		
-		private Degree(String name){
+		private Degree(String name, int index){
 			this.name= name;
+			this.index = index;
+		}
+		
+		public int getIndex(){
+			return index;
 		}
 		
 		public String toString(){
@@ -119,31 +125,38 @@ public class FeedbackInput extends JDialog implements ActionListener {
 		String action = e.getActionCommand();
 		
 		if (action.equals(okActionCommand)){
-			
+			if (selectedDegree == Degree.NONE){
+				//mensaje de que hay que seleccionar un degree of satisfaction
+			}
+			else {
+				String feedback = textPane.getText();
+				int degree = selectedDegree.getIndex();
+				
+				
+			}
 		}
-		else if (action.equals(cancelActionCommand)){
-			
-		}
-		else if (action.equals(degreeActionCommands[4])){
-			deselectOthers(4);
-		}
-		else if (action.equals(degreeActionCommands[3])){
-			deselectOthers(3);
-		}
-		else if (action.equals(degreeActionCommands[2])){
-			deselectOthers(2);
-		}
-		else if (action.equals(degreeActionCommands[1])){
-			deselectOthers(1);
-		}		
-		else if (action.equals(degreeActionCommands[0])){
-			deselectOthers(0);
-		}
+		else if (action.equals(cancelActionCommand))
+			dispose();
+		
+		else if (action.equals(Degree.FIVE.toString()))
+			deselectOthers(Degree.FIVE.getIndex());
+		
+		else if (action.equals(Degree.FOUR.toString()))
+			deselectOthers(Degree.FOUR.getIndex());
+		
+		else if (action.equals(Degree.THREE.toString()))
+			deselectOthers(Degree.THREE.getIndex());
+		
+		else if (action.equals(Degree.TWO.toString()))
+			deselectOthers(Degree.TWO.getIndex());
+		
+		else if (action.equals(Degree.ONE.toString()))
+			deselectOthers(Degree.ONE.getIndex());
 	}
 	
 	private void deselectOthers(int index){
 		for (int i = 0; i < degree_radioButtons.length; i++){
-			if (i != index && degree_radioButtons[i].isSelected())
+			if (i != index - 1 && degree_radioButtons[i].isSelected())
 				degree_radioButtons[i].setSelected(false);
 		}
 	}

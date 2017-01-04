@@ -46,7 +46,7 @@ public class PublicProfile extends ContentHashPastContent {
 		//this.timestamp_lastchange = timestamp_lastchange;
 		//this.self_digitalSignatureLastChange = self_digitalSignatureLastChange;
 	}
-
+	
 	/*public String getFileType() {
 		return fileType;
 	}

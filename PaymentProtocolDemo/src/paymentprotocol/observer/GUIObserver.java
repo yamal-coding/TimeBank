@@ -5,7 +5,7 @@ public interface GUIObserver {
 	
 	public void onNoPendingTransactions();
 
-	public void onReceiveNotification();
+	public void onReceiveNotification(String notification);
 	
 	public void onNodeAlreadyConnected();
 	
@@ -13,5 +13,5 @@ public interface GUIObserver {
 	
 	public void onTransactionLoaded(String transref);
 	
-	public void onFailedPublicProfileFailLoad();
+	public void onFailedPublicProfileLoad();
 }

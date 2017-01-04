@@ -97,8 +97,8 @@ public class Demo {
 		*/
 		
 		//Graphic GUI
-		MainView creditorGraphicGUI = new MainView(creditorController, 9004, "192.168.1.37", 9003);
 		MainView debitorGraphicGUI = new MainView(debitorController, 9005, "192.168.1.37", 9003);
+		MainView creditorGraphicGUI = new MainView(creditorController, 9004, "192.168.1.37", 9003);
 		
 	}
 	
@@ -190,8 +190,8 @@ public class Demo {
 		String self_digitalSignature_creation;
 		
 		if (isCreditor){
-			self_firstName = "Creditor";
-			self_surnames = "Ledebenhoras";
+			self_firstName = "Juan (Creditor)";
+			self_surnames = "Sanchez";
 			self_telephone = 555888;
 			self_email = "creditor@timebankucm.es";
 			self_address = "Elm Street";
@@ -199,8 +199,8 @@ public class Demo {
 			self_digitalSignature_creation = "FirmaCreditor (pendiente de cambiar tipo)";
 		}
 		else {
-			self_firstName = "Debitor";
-			self_surnames = "Debehoras";
+			self_firstName = "Pepe (Debitor)";
+			self_surnames = "Garcia";
 			self_telephone = 555777;
 			self_email = "debitor@timebankucm.es";
 			self_address = "Sesame Street";

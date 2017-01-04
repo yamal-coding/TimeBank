@@ -23,7 +23,7 @@ public class TerminalGUI implements GUIObserver {
 	}
 
 	@Override
-	public void onReceiveNotification() {
+	public void onReceiveNotification(String notification) {
 		System.out.println("Notificación recibida");
 	}
 
@@ -44,7 +44,7 @@ public class TerminalGUI implements GUIObserver {
 	}
 	
 	@Override
-	public void onFailedPublicProfileFailLoad(){
+	public void onFailedPublicProfileLoad(){
 		System.err.println("Error al cargar el perfil publico");
 	}
 }

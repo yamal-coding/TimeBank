@@ -1,7 +1,6 @@
 package paymentprotocol.model;
 
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import paymentprotocol.model.files.local.PrivateProfile;
@@ -51,7 +50,7 @@ public class Core implements CoreObserver {
 		this.loadBillTrials = 0;
 		this.p2pLayer = p2pLayer;
 		this.privateProfile = privateProfile;
-		this.p2pLayer.addObserver((this));
+		this.p2pLayer.addObserver(this);
 	}
 	
 	/**
@@ -112,7 +111,7 @@ public class Core implements CoreObserver {
 						
 					}
 				} catch (InterruptedException e) {
-					//Notify error to the GUI
+					guiObserver.failedConnection();
 				}
 		}
 	}
@@ -136,6 +135,7 @@ public class Core implements CoreObserver {
 	}
 	
 	private AccountLedgerEntry createLedgerEntryPE1(){
+		
 		return null;
 	}
 	
@@ -177,7 +177,7 @@ public class Core implements CoreObserver {
 	 */
 	@Override
 	public synchronized void onReceiveNotification(NotificationPair notificationPair) {
-		guiObserver.onReceiveNotification();
+		guiObserver.onReceiveNotification("");
 	}
 
 	/**
@@ -299,7 +299,7 @@ public class Core implements CoreObserver {
 			}
 		}
 	}
-
+	
 	/**
 	 * Successfully PublicProfile request
 	 * If an error has occurred, the boolean error variable is set to true
@@ -310,7 +310,7 @@ public class Core implements CoreObserver {
 	@Override
 	public synchronized void onLookupPublicProfile(PastContent publicProfile, boolean error, String msg) {
 		if (error){
-			
+			guiObserver.onFailedPublicProfileLoad();
 		}
 		else{
 			try{
@@ -318,7 +318,7 @@ public class Core implements CoreObserver {
 				guiObserver.onPublicProfileLoaded(this.publicProfile.getSelf_firstName(), this.publicProfile.getSelf_surnames());
 			}
 			catch (ClassCastException e) {
-				//Handle error
+				guiObserver.onFailedPublicProfileLoad();
 			}
 		}
 		notify();

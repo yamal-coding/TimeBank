@@ -4,6 +4,7 @@ import javax.swing.JFrame;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JTextPane;
+import javax.swing.SwingUtilities;
 
 import paymentprotocol.control.Controller;
 import paymentprotocol.observer.GUIObserver;
@@ -12,19 +13,30 @@ import java.awt.GridLayout;
 import java.awt.GridBagLayout;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 
 import javax.swing.JScrollPane;
 import javax.swing.BoxLayout;
+import javax.swing.DefaultListModel;
+
 import java.awt.FlowLayout;
 import javax.swing.JButton;
+import javax.swing.JList;
 
 public class MainView extends JFrame implements GUIObserver{
 
 	private JTextPane logTextPane;
-	JLabel nameLabel;
-	JLabel surnameLabel;
+	private JLabel nameLabel;
+	private JLabel surnameLabel;
+	
+	private DefaultListModel<String> transactionsListModel;
+	private JList<String> transactionsList;
+	
+	private DefaultListModel<String> notificationsListModel;
+	private JList<String> notificationsList;
 	
 	private Controller c;
 
@@ -43,7 +55,7 @@ public class MainView extends JFrame implements GUIObserver{
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-		this.setBounds(100, 100, 587, 437);
+		this.setBounds(100, 100, 736, 437);
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		this.getContentPane().setLayout(new BorderLayout(0, 0));
 		
@@ -90,26 +102,19 @@ public class MainView extends JFrame implements GUIObserver{
 		
 		JPanel paymentsPanel = new JPanel();
 		panel.add(paymentsPanel);
-		GridBagLayout gbl_paymentsPanel = new GridBagLayout();
-		gbl_paymentsPanel.columnWidths = new int[]{0, 0};
-		gbl_paymentsPanel.rowHeights = new int[]{0, 0, 0};
-		gbl_paymentsPanel.columnWeights = new double[]{1.0, Double.MIN_VALUE};
-		gbl_paymentsPanel.rowWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
-		paymentsPanel.setLayout(gbl_paymentsPanel);
+		paymentsPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
 		
 		JLabel paymentsLabel = new JLabel("Transactions");
-		GridBagConstraints gbc_paymentsLabel = new GridBagConstraints();
-		gbc_paymentsLabel.insets = new Insets(0, 0, 5, 0);
-		gbc_paymentsLabel.gridx = 0;
-		gbc_paymentsLabel.gridy = 0;
-		paymentsPanel.add(paymentsLabel, gbc_paymentsLabel);
+		paymentsPanel.add(paymentsLabel);
 		
 		JPanel paymentsSubpanel = new JPanel();
-		GridBagConstraints gbc_paymentsSubpanel = new GridBagConstraints();
-		gbc_paymentsSubpanel.fill = GridBagConstraints.BOTH;
-		gbc_paymentsSubpanel.gridx = 0;
-		gbc_paymentsSubpanel.gridy = 1;
-		paymentsPanel.add(paymentsSubpanel, gbc_paymentsSubpanel);
+		paymentsPanel.add(paymentsSubpanel);
+		
+		transactionsListModel = new DefaultListModel<String>();
+		transactionsList = new JList<String>(transactionsListModel);
+		JScrollPane transactionsScrollPane = new JScrollPane();
+		transactionsScrollPane.setViewportView(transactionsList);
+		paymentsSubpanel.add(transactionsScrollPane);
 		
 		JPanel notificationsPanel = new JPanel();
 		panel.add(notificationsPanel);
@@ -134,45 +139,84 @@ public class MainView extends JFrame implements GUIObserver{
 		gbc_notificationsSubpanel.gridy = 1;
 		notificationsPanel.add(notificationsSubpanel, gbc_notificationsSubpanel);
 		
+		notificationsListModel = new DefaultListModel<String>();
+		notificationsList = new JList<String>(notificationsListModel);
+		JScrollPane notificationsScrollPane = new JScrollPane();
+		notificationsScrollPane.setViewportView(notificationsList);
+		paymentsSubpanel.add(transactionsScrollPane);
+		
 		this.setVisible(true);
 	}
 
 	@Override
 	public void failedConnection() {
-		logTextPane.setText(logTextPane.getText() + "Failed connection: internal error.\n");
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				logTextPane.setText(logTextPane.getText() + "Failed connection: internal error.\n");
+			}
+		});
 	}
 
 	@Override
 	public void onNoPendingTransactions() {
-		logTextPane.setText(logTextPane.getText() + "There is not any transaction to load.\n");
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				logTextPane.setText(logTextPane.getText() + "There is not any transaction to load.\n");
+			}
+		});
 	}
 
 	@Override
-	public void onReceiveNotification() {
-		// TODO Auto-generated method stub
-		
+	public void onReceiveNotification(String notification) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				SwingUtilities.invokeLater(new Runnable() {
+					public void run(){
+						logTextPane.setText(logTextPane.getText() + "Notification received.\n");
+						notificationsListModel.addElement(notification);
+					}
+				});
+			}
+		});
 	}
 
 	@Override
 	public void onNodeAlreadyConnected() {
-		logTextPane.setText(logTextPane.getText() + "Failed connection: Node already connected.\n");
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				logTextPane.setText(logTextPane.getText() + "Failed connection: Node already connected.\n");
+			}
+		});
 	}
 
 	@Override
 	public void onPublicProfileLoaded(String name, String surname) {
 		logTextPane.setText(logTextPane.getText() + "Public profile loaded succesfully.\n");
-		nameLabel.setText("Name: " + name);
-		surnameLabel.setText("Surame: " + surname);
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				nameLabel.setText("Name: " + name);
+				surnameLabel.setText("Surame: " + surname);
+			}
+		});
 	}
 
 	@Override
 	public void onTransactionLoaded(String transref) {
-		logTextPane.setText(logTextPane.getText() + "Bill " + transref + " loaded.\n");
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				logTextPane.setText(logTextPane.getText() + "Bill " + transref + " loaded.\n");
+				transactionsListModel.addElement(transref);
+			}
+		});
 	}
 
 	@Override
-	public void onFailedPublicProfileFailLoad() {
-		logTextPane.setText(logTextPane.getText() + "Public profile falied load.\n");
+	public void onFailedPublicProfileLoad() {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				logTextPane.setText(logTextPane.getText() + "Public profile falied load.\n");
+			}
+		});
 	}
 
 }
