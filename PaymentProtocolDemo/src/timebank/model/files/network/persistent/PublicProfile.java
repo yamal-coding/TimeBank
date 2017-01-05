@@ -17,9 +17,9 @@ public class PublicProfile extends ContentHashPastContent {
 	//private String enabled;
 	private Timestamp timestamp_creation;
 	private String self_digitalSignature_creation; //cambiar tipo
-	private Id self_last_LedgerEntryDHTHash;
-	private Id self_last_FAMEntryDHTHash;
-	private Id self_last_FBMEntryDHTHash;
+	private Id self_first_LedgerEntryDHTHash;
+	private Id self_first_FAMEntryDHTHash;
+	private Id self_first_FBMEntryDHTHash;
 	//private String timestamp_lastchange; //cambiar tipo
 	//private String self_digitalSignatureLastChange; //cambiar tipo
 
@@ -40,9 +40,9 @@ public class PublicProfile extends ContentHashPastContent {
 		//this.enabled = enabled;
 		this.timestamp_creation = timestamp_creation;
 		this.self_digitalSignature_creation = self_digitalSignature_creation;
-		this.self_last_LedgerEntryDHTHash = self_last_LedgerEntryDHTHash;
-		this.self_last_FAMEntryDHTHash = self_last_FAMEntryDHTHash;
-		this.self_last_FBMEntryDHTHash = self_last_FBMEntryDHTHash;
+		this.self_first_LedgerEntryDHTHash = self_last_LedgerEntryDHTHash;
+		this.self_first_FAMEntryDHTHash = self_last_FAMEntryDHTHash;
+		this.self_first_FBMEntryDHTHash = self_last_FBMEntryDHTHash;
 		//this.timestamp_lastchange = timestamp_lastchange;
 		//this.self_digitalSignatureLastChange = self_digitalSignatureLastChange;
 	}
@@ -91,16 +91,16 @@ public class PublicProfile extends ContentHashPastContent {
 		return self_digitalSignature_creation;
 	}
 
-	public Id getSelf_last_LedgerEntryDHTHash() {
-		return self_last_LedgerEntryDHTHash;
+	public Id getSelf_first_LedgerEntryDHTHash() {
+		return self_first_LedgerEntryDHTHash;
 	}
 
-	public Id getSelf_last_FAMEntryDHTHash() {
-		return self_last_FAMEntryDHTHash;
+	public Id getSelf_first_FAMEntryDHTHash() {
+		return self_first_FAMEntryDHTHash;
 	}
 
-	public Id getSelf_last_FBMEntryDHTHash() {
-		return self_last_FBMEntryDHTHash;
+	public Id getSelf_first_FBMEntryDHTHash() {
+		return self_first_FBMEntryDHTHash;
 	}
 
 	/*public String getTimestamp_lastchange() {

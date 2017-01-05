@@ -58,8 +58,8 @@ public class FBMEntry extends ContentHashPastContent {
 		this.isCreditor = fbmPE1.isCreditor();
 		this.comment = fbmPE1.getComment();
 		this.numericalDegreeOfSatisfactionWithService = fbmPE1.getNumericalDegreeOfSatisfactionWithService();
-		this.self_previous_FBMEntry_DHTHash = fbmPE1.getSelf_previous_FAMEntry_DHTHash();
-		this.self_next_FBMEntry_DHTHash = fbmPE1.getSelf_next_FAMEntry_DHTHash();
+		this.self_previous_FBMEntry_DHTHash = fbmPE1.getSelf_previous_FBMEntry_DHTHash();
+		this.self_next_FBMEntry_DHTHash = fbmPE1.getSelf_next_FBMEntry_DHTHash();
 		this.other_FAMEntry_DHTHash = other_FAMEntry_DHTHash;
 	}
 	
@@ -78,8 +78,8 @@ public class FBMEntry extends ContentHashPastContent {
 		this.isCreditor = fbmPE2.isCreditor();
 		this.comment = fbmPE2.getComment();
 		this.numericalDegreeOfSatisfactionWithService = fbmPE2.getNumericalDegreeOfSatisfactionWithService();
-		this.self_previous_FBMEntry_DHTHash = fbmPE2.getSelf_previous_FAMEntry_DHTHash();
-		this.self_next_FBMEntry_DHTHash = fbmPE2.getSelf_next_FAMEntry_DHTHash();
+		this.self_previous_FBMEntry_DHTHash = fbmPE2.getSelf_previous_FBMEntry_DHTHash();
+		this.self_next_FBMEntry_DHTHash = fbmPE2.getSelf_next_FBMEntry_DHTHash();
 		this.other_FAMEntry_DHTHash = fbmPE2.getOther_FAMEntry_DHTHash();
 		this.timestamp_creation = timestamp_creation;
 		this.self_digitalSignature = self_digitalSignature;
@@ -113,11 +113,11 @@ public class FBMEntry extends ContentHashPastContent {
 		return other_FAMEntry_DHTHash;
 	}
 
-	public Id getSelf_previous_FAMEntry_DHTHash() {
+	public Id getSelf_previous_FBMEntry_DHTHash() {
 		return self_previous_FBMEntry_DHTHash;
 	}
 
-	public Id getSelf_next_FAMEntry_DHTHash() {
+	public Id getSelf_next_FBMEntry_DHTHash() {
 		return self_next_FBMEntry_DHTHash;
 	}
 

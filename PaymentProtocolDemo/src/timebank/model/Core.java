@@ -285,14 +285,14 @@ public class Core implements CoreObserver {
 
 		//Wait until the trhee files are successfully loaded
 		//wait()
-		
+		/*
 		//Creditor validates these files. An error is returned if one or more files are not well formed
 		if (validateLedgerEntryPE1(creditorLedgerEntryPE1)){
 			if (validateFAMEntryPE1(debitorFACreditorPE1)){
 				if (validateFBMEntryPE1(creditorFBMEntryPE1))
 					if (validateLedgerEntryPE2(debitorLedgerEntryPE2))
 						if (validateFAMEntryPE2(creditorFADebitorPE2)){
-							if (validateFBMEntryPE2(debitorFBMEntryPE2))
+							if (validateFBMEntryPE2(debitorFBMEntryPE2)){
 								//successful validation
 							else
 								//Validation FBMEntryPE2 error
@@ -308,8 +308,7 @@ public class Core implements CoreObserver {
 			}else
 				//Validation FAMEntryPE1 error
 		}else
-			//Validation ledgerEntryPE1
-		
+			//Validation ledgerEntryPE1*/
 	}
 	
 	public void paymentProtocolDebitorPhase3(){
@@ -392,14 +391,40 @@ public class Core implements CoreObserver {
 	}
 	
 	private AccountLedgerEntry loadLastAccountLedgerEntry(){
+		p2pLayer.get(publicProfile.getSelf_first_LedgerEntryDHTHash(), "firstLedgerEntry", FileType.ACCOUNT_LEDGER_ENTRY);
+		
+		try {
+			wait();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		return null;
 	}
 
 	private FAMEntry loadLastFAMEntry(){
+		p2pLayer.get(publicProfile.getSelf_first_FAMEntryDHTHash(), "firstFAMEntry", FileType.FAM_ENTRY);
+		
+		try {
+			wait();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 		return null;
 	}
 	
 	private FBMEntry loadLastFBMEntry(){
+		p2pLayer.get(publicProfile.getSelf_first_FBMEntryDHTHash(), "firstFBMEntry", FileType.FBM_ENTRY);
+		
+		try {
+			wait();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		return null;
 	}
@@ -517,6 +542,7 @@ public class Core implements CoreObserver {
 	public synchronized void onLookupFAMEntry(PastContent famEntry, boolean error, String msg) {
 		if (error){
 			//Handle error
+
 		}
 		else{
 			try {
@@ -574,5 +600,73 @@ public class Core implements CoreObserver {
 			}
 		}
 		notify();
+	}
+
+	@Override
+	public void onReceivedLastAccountLedgerEntry(PastContent ledger, boolean error) {
+		if (error){
+			//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
+			//se puede establecer un sistema de reintentos que si la busqueda devuelve error
+			//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
+			notify();
+		}
+		else{
+			try{
+				AccountLedgerEntry lastLedger = (AccountLedgerEntry) ledger;
+				p2pLayer.get(lastLedger.getSelf_next_ledgerEntry_DHTHash(), "ledgerEntry" + lastLedger.getLedgerEntryNum() + 1, FileType.ACCOUNT_LEDGER_ENTRY);
+			}
+			catch (ClassCastException e){
+				//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
+				//se puede establecer un sistema de reintentos que si la busqueda devuelve error
+				//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
+				notify();
+			}
+		}
+		
+	}
+	
+	@Override
+	public void onReceivedLastFAMEntry(PastContent fam, boolean error) {
+		if (error){
+			//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
+			//se puede establecer un sistema de reintentos que si la busqueda devuelve error
+			//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
+			notify();
+		}
+		else{
+			try{
+				FAMEntry lastFAM = (FAMEntry) fam;
+				p2pLayer.get(lastFAM.getSelf_next_FAMEntry_DHTHash(), "FAMEntry" + lastFAM.getFAMEntryNum() + 1, FileType.FAM_ENTRY);
+			}
+			catch (ClassCastException e){
+				//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
+				//se puede establecer un sistema de reintentos que si la busqueda devuelve error
+				//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
+				notify();
+			}
+		}
+	}
+	
+	@Override
+	public void onReceivedLastFBMEntry(PastContent fbm, boolean error) {
+		if (error){
+			//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
+			//se puede establecer un sistema de reintentos que si la busqueda devuelve error
+			//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
+			notify();
+		}
+		else{
+			try{
+				FBMEntry lastFBM = (FBMEntry) fbm;
+				p2pLayer.get(lastFBM.getSelf_next_FBMEntry_DHTHash(), "FBMEntry" + lastFBM.getFBMEntryNum() + 1, FileType.FBM_ENTRY);
+			}
+			catch (ClassCastException e){
+				//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
+				//se puede establecer un sistema de reintentos que si la busqueda devuelve error
+				//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
+				notify();
+			}
+		}
+		
 	}
 }

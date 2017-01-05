@@ -2,7 +2,6 @@ package timebank.model.p2p;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.UUID;
 
 import rice.Continuation;
 import rice.environment.Environment;
