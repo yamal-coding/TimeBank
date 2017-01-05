@@ -10,20 +10,42 @@ import rice.p2p.commonapi.Message;
  *
  */
 public class NotificationPair implements Message {
-	private String id; //cambiar tipo
+	private Id from; //originator
+	private Id to; //destination
+	private String id; //cambiar tipo?
 	private Id hash;
+	private String ref; //reference to this pair
 	
 	/**
 	 * Constructor
 	 * @param id
 	 * @param hash
 	 */
-	public NotificationPair(String id, Id hash) {
+	public NotificationPair(Id from, Id to, String id, Id hash, String ref) {
 		super();
+		this.from = from;
+		this.to= to;
 		this.id = id;
 		this.hash = hash;
+		this.ref = ref;
 	}
 
+	/**
+	 * Returns the Id of the originator of the message
+	 * @return from
+	 */
+	public Id getIdFrom(){
+		return from;
+	}
+	
+	/**
+	 * Returns the Id of the destination of the message
+	 * @return from
+	 */
+	public Id getIdTo(){
+		return to;
+	}
+	
 	/**
 	 * Returns the id stored in this notification pair
 	 * @return id
@@ -38,6 +60,14 @@ public class NotificationPair implements Message {
 	 */
 	public Id getHash() {
 		return hash;
+	}
+	
+	/**
+	 * Returns the reference to this pair
+	 * @return
+	 */
+	public String getRef(){
+		return ref;
 	}
 	
 	public String toString(){

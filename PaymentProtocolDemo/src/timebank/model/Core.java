@@ -42,6 +42,9 @@ public class Core implements CoreObserver {
 	private volatile int billsToload;
 	private volatile int loadBillTrials;
 	
+	//Notifications associated to each Payment. The transaction reference is used
+	private volatile Map<String, NotificationPair> notificationsReceived;
+	
 	
 	/**
 	 * Core constructor
@@ -49,6 +52,7 @@ public class Core implements CoreObserver {
 	 */
 	public Core(P2PLayer p2pLayer, PrivateProfile privateProfile){
 		this.loadedBills = new HashMap<String, Bill>();
+		this.notificationsReceived = new HashMap<String, NotificationPair>();
 		this.billsToload = privateProfile.getTransactionsDHTHashes().size();
 		this.loadBillTrials = 0;
 		this.p2pLayer = p2pLayer;
@@ -113,7 +117,7 @@ public class Core implements CoreObserver {
 		}
 	}
 	
-	public synchronized void paymentProtocolDebitorPhase1(String transRef){
+	public synchronized void paymentProtocolDebitorPhase1(String transRef, String comment, int degreeOfStisfaction){
 		//With the transaction reference given, the corresponding bill is loaded
 		Bill bill = loadedBills.get(transRef);
 		
@@ -151,11 +155,20 @@ public class Core implements CoreObserver {
 		
 		//debitorFBMEntryPE1
 		FBMEntry debitorFBMEntryPE1 = PastEntryFactory.createFBMEntryPE1(lastFBM.getFBMEntryNum(), 
-				lastFBM.getId(), self_ledgerEntry_DHTHash, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+				lastFBM.getId(), self_ledgerEntry_DHTHash, comment, degreeOfStisfaction, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 		
 		//store the corresponding entries into DHT
+		storeFilesDebitorPaymentProtocolPhase1(debitorLedgerEntryPE1, creditorFADebitorPE1, debitorFBMEntryPE1);
 		
 		//the hashes and ids of the entries are sent as NotificationPairs objects to the creditor
+		//Notify when p2pLayer notifies to this class the successful storage
+	}
+
+	private void storeFilesDebitorPaymentProtocolPhase1(AccountLedgerEntry debitorLedgerEntryPE1,
+			FAMEntry creditorFADebitorPE1, FBMEntry debitorFBMEntryPE1) {
+		p2pLayer.put(debitorLedgerEntryPE1, "debitorLedgerEntryPE1", FileType.ACCOUNT_LEDGER_ENTRY);
+		p2pLayer.put(creditorFADebitorPE1, "creditorFADebitorPE1", FileType.FAM_ENTRY);
+		p2pLayer.put(debitorFBMEntryPE1, "debitorFBMEntryPE1", FileType.FBM_ENTRY);
 	}
 
 
@@ -164,39 +177,138 @@ public class Core implements CoreObserver {
 		//With the NotificationPairs (id and hash) received from debitor, the creditor loads
 		//the corresponding files
 		
-		//Creditor validates these files. An error is returned if one or more files are not well formed
+		p2pLayer.get(debitorLedgerEntryPE1Notification.getHash(), debitorLedgerEntryPE1Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
+		p2pLayer.get(creditorFADebitorPE1Notification.getHash(), creditorFADebitorPE1Notification.getId(), FileType.FAM_ENTRY);
+		p2pLayer.get(debitorFBMEntryPE1Notification.getHash(), debitorFBMEntryPE1Notification.getId(), FileType.FBM_ENTRY);
 		
+		
+		//Wait until the trhee files are successfully loaded
+		//wait()
+		
+		//Creditor validates these files. An error is returned if one or more files are not well formed
+		if (validateLedgerEntryPE1(debitorLedgerEntryPE1)){
+			if (validateFAMEntryPE1(creditorFADebitorPE1)){
+				if (validateFBMEntryPE1(debitorFBMEntryPE1))
+					//Succesful validation
+				else
+					//Validation FBMEntryPE1 error
+			}
+			else
+				//Validation FAMEntryPE1 error
+		}
+		else
+			//Validation ledgerEntryPE1
 	}
 	
-	public void paymentProtocolCreditorPhase2(){
+	public void paymentProtocolCreditorPhase2(String transRef, String comment, int degreeOfSatisfaction){
 		//Creditor loads from DHT the bill associated to the current payment
+		Bill bill = loadedBills.get(transRef);
+		
+		//The last accountLedgerEntry must be loaded from DHT to calculate the next parameters:
+		//ledgerEntryNum
+		//pre-balance
+		//self_previous_ledgerEntry_DHTHash
+		AccountLedgerEntry lastLedger = loadLastAccountLedgerEntry();
+		
+		//The last FAMEntry must be loaded from DHT to know the next parameters:
+		//FAMEntryNum
+		//self_previous_FAMEntry_DHTHash
+		FAMEntry lastFAM = loadLastFAMEntry();
+		
+		//The last FBMEntry must be loaded from DHT to know the next parameters:
+		//FBMEntryNum
+		//self_previous_FAMEntry_DHTHash
+		FBMEntry lastFBM = loadLastFBMEntry();
 		
 		//With bill information creates the next partial entries
-		//creditorLedgerEntryPE1
-		//AccountLedgerEntry creditorLedgerPE1 = PastEntryFactory.createAccountLedgerEntryPE1();
-		//debitorFACreditorPE1
-		//FAMEntry debitorFACreditorPE1 = PastEntryFactory.createFAMEntryPE1();
-		//creditorFBMPE1
-		//FAMEntry creditorFBMEntryPE1 = PastEntryFactory.createFBMEntryPE1();
+		//creditorLedgerPE1
+		AccountLedgerEntry creditorLedgerEntryPE1 = PastEntryFactory.createAccountLedgerEntryPE1(bill, 
+				lastLedger.getLedgerEntryNum(), lastLedger.getBalance(), lastLedger.getId(), 
+				lastFBM.getFBMEntryNum(), true, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 		
+		//Common field to debitorFACReditorPE1 and creditorFBMEntryPE1
+		//This hash is directly calculated at this point because files in FreePastry are not mutable
+		Id self_ledgerEntry_DHTHash = Util.makeDHTHash(p2pLayer.getPastryIdFactory(), privateProfile.getUUID(), 
+				creditorLedgerEntryPE1.getLedgerEntryNum(), null, FileType.ACCOUNT_LEDGER_ENTRY, EntryType.FINAL_ENTRY);
+		
+		//debitorFACreditorPE1
+		FAMEntry debitorFACreditorPE1 = PastEntryFactory.createFAMEntryPE1(lastFAM.getFAMEntryNum(), 
+				lastFAM.getId(), self_ledgerEntry_DHTHash, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+		
+		//creditorFBMPE1
+		FBMEntry creditorFBMEntryPE1 = PastEntryFactory.createFBMEntryPE1(lastFBM.getFBMEntryNum(), 
+				lastFBM.getId(), self_ledgerEntry_DHTHash, comment, degreeOfSatisfaction, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+				
 		//With the three files loaded previously the next partial entries are created
 		//debitorLedgerPE2
-		AccountLedgerEntry debitorLedgerPE2 = PastEntryFactory.createAccountLedgerEntryPE2();
+		AccountLedgerEntry debitorLedgerEntryPE2 = PastEntryFactory.createAccountLedgerEntryPE2();
 		//creditorFADebitorPE2
 		FAMEntry creditorFADebitorPE2 = PastEntryFactory.createFAMEntryPE2();
 		//debitorFBEntryPE2
 		FBMEntry debitorFBMEntryPE2 = PastEntryFactory.createFBMEntryPE2();
 		
 		//store the corresponding entries into DHT
+		storeFilesCreditorPaymentProtocolPhase2(creditorLedgerEntryPE1, debitorFACreditorPE1, creditorFBMEntryPE1,
+				debitorLedgerEntryPE2, creditorFADebitorPE2, debitorFBMEntryPE2);
 		
+		//Notify when p2pLayer notifies to this class the successful storage
+		wait();
 		//the hashes and ids of the entries are sent as NotificationPairs objects to the debitor
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
+	}
+
+	private void storeFilesCreditorPaymentProtocolPhase2(AccountLedgerEntry creditorLedgerEntryPE1,
+			FAMEntry debitorFACreditorPE1, FBMEntry creditorFBMEntryPE1, AccountLedgerEntry debitorLedgerEntryPE2,
+			FAMEntry creditorFADebitorPE2, FBMEntry debitorFBMEntryPE2) {
+		p2pLayer.put(creditorLedgerEntryPE1, "creditorLedgerEntryPE1", FileType.ACCOUNT_LEDGER_ENTRY);
+		p2pLayer.put(debitorFACreditorPE1, "debitorFACreditorPE1", FileType.FAM_ENTRY);
+		p2pLayer.put(creditorFBMEntryPE1, "creditorFBMEntryPE1", FileType.FBM_ENTRY);
+		p2pLayer.put(debitorLedgerEntryPE2, "debitorLedgerEntryPE2", FileType.ACCOUNT_LEDGER_ENTRY);
+		p2pLayer.put(creditorFADebitorPE2, "creditorFADebitorPE2", FileType.FAM_ENTRY);
+		p2pLayer.put(debitorFBMEntryPE2, "debitorFBMEntryPE2", FileType.FBM_ENTRY);
 	}
 	
 	public void paymentProtocolDebitorPhase2(){
 		//With the NotificationPairs (id and hash) received from creditor, the debitor loads
 		//the corresponding files
+		p2pLayer.get(creditorLedgerEntryPE1Notification.getHash(), creditorLedgerEntryPE1Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
+		p2pLayer.get(debitorFACreditorPE1Notification.getHash(), debitorFACreditorPE1Notification.getId(), FileType.FAM_ENTRY);
+		p2pLayer.get(creditorFBMEntryNotification.getHash(), creditorFBMEntryNotification.getId(), FileType.FBM_ENTRY);
+		p2pLayer.get(debitorLedgerEntryPE2Notification.getHash(), debitorLedgerEntryPE2Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
+		p2pLayer.get(creditorFADebitorPE2Notification.getHash(), creditorFADebitorPE2Notification.getId(), FileType.FAM_ENTRY);
+		p2pLayer.get(debitorFBMEntryPE2Notification.getHash(), debitorFBMEntryPE2Notification.getId(), FileType.FBM_ENTRY);
+	
 		
 		//Debitor validates these files. An error is returned if one or more files are not well formed
+
+		//Wait until the trhee files are successfully loaded
+		//wait()
+		
+		//Creditor validates these files. An error is returned if one or more files are not well formed
+		if (validateLedgerEntryPE1(creditorLedgerEntryPE1)){
+			if (validateFAMEntryPE1(debitorFACreditorPE1)){
+				if (validateFBMEntryPE1(creditorFBMEntryPE1))
+					if (validateLedgerEntryPE2(debitorLedgerEntryPE2))
+						if (validateFAMEntryPE2(creditorFADebitorPE2)){
+							if (validateFBMEntryPE2(debitorFBMEntryPE2))
+								//successful validation
+							else
+								//Validation FBMEntryPE2 error
+						}
+						else
+							//Validation FAMEntryPE2 error
+					}
+					else
+						//Validation ledgerEntryPE2 error
+				}
+				else
+					//Validation FBMEntryPE1 error
+			}else
+				//Validation FAMEntryPE1 error
+		}else
+			//Validation ledgerEntryPE1
 		
 	}
 	
@@ -204,44 +316,79 @@ public class Core implements CoreObserver {
 		//With the debitor corresponding three partial files the next final entries are created:
 		
 		//debitorLedger
-		//createLedgerEntryFinal();
+		AccountLedgerEntry debitorLedgerEntry = PastEntryFactory.createFinalAccountLedgerEntry();
 		//creditorFADebitor
-		//createFAMEntryFinal();
+		FAMEntry creditorFADebitor = PastEntryFactory.createFinalFAMEntry();
 		//debitorFBEntry
-		//createFBMEntryFinal();
+		FBMEntry debitorFBMEntry = PastEntryFactory.createFinalFBMEntry();
 		
-		//The previous are stored into the DHT
+		//The previous files are stored into the DHT
 		
 		//The debitor create the next partial entries with the other three partial entries loaded
 		//creditorLedgerEntryPE2
-		//createLedgerEntryPE2();
+		AccountLedgerEntry creditorLedgerEntryPE2 = PastEntryFactory.createAccountLedgerEntryPE2();
 		//debitorFACreditorPE2
-		//createFAMEntryPE2();
-		//creditorFBMPE2
-		//createFBMEntryPE2();
+		FAMEntry debitorFACreditorPE2 = PastEntryFactory.createFAMEntryPE2();
+		//creditorFBMEntryPE2
+		FBMEntry creditorFBMEntryPE2 = PastEntryFactory.createFBMEntryPE2();
 		
 		//The previous entries are stored into the DHT
+		storeFIlesDebitorPaymentProtocolPhase3(debitorLedgerEntry, creditorFADebitor, debitorFBMEntry,
+				creditorLedgerEntryPE2, debitorFACreditorPE2, creditorFBMEntryPE2);
+		
 		
 		//the hashes and ids of the entries are sent as NotificationPairs objects to the creditor
 	}
+
+	private void storeFIlesDebitorPaymentProtocolPhase3(AccountLedgerEntry debitorLedgerEntry,
+			FAMEntry creditorFADebitor, FBMEntry debitorFBMEntry, AccountLedgerEntry creditorLedgerEntryPE2,
+			FAMEntry debitorFACreditorPE2, FBMEntry creditorFBMEntryPE2) {
+		p2pLayer.put(debitorLedgerEntry, "debitorLedgerEntryPE2", FileType.ACCOUNT_LEDGER_ENTRY);
+		p2pLayer.put(creditorFADebitor, "creditorFADebitorPE2", FileType.FAM_ENTRY);
+		p2pLayer.put(debitorFBMEntry, "debitorFBMEntryPE2", FileType.FBM_ENTRY);
+		p2pLayer.put(creditorLedgerEntryPE2, "creditorLedgerEntryPE1", FileType.ACCOUNT_LEDGER_ENTRY);
+		p2pLayer.put(debitorFACreditorPE2, "debitorFACreditorPE1", FileType.FAM_ENTRY);
+		p2pLayer.put(creditorFBMEntryPE2, "creditorFBMEntryPE1", FileType.FBM_ENTRY);
+	}
 	
-	public void paymentProtocolCreditorPhase3(){
+	public void paymentProtocolCreditorPhase3(String transRef){
 		//With the NotificationPairs (id and hash) received from debitor, the creditor loads
 		//the corresponding files
+		NotificationPair creditorLedgerEntryPE2Notification = notificationsReceived.get("");
+		NotificationPair debitorFACreditorPE2Notification = notificationsReceived.get("");
+		NotificationPair creditorFBMEntryPE2Notification = notificationsReceived.get("");
+		
+		p2pLayer.get(creditorLedgerEntryPE2Notification.getHash(), creditorLedgerEntryPE2Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
+		p2pLayer.get(debitorFACreditorPE2Notification.getHash(), debitorFACreditorPE2Notification.getId(), FileType.FAM_ENTRY);
+		p2pLayer.get(creditorFBMEntryPE2Notification.getHash(), creditorFBMEntryPE2Notification.getId(), FileType.FBM_ENTRY);
+		
+		//Wait until the trhee files are successfully loaded
+		//wait()
 		
 		//Creditor validates these files. An error is returned if one or more files are not well formed
-		
+		if (validateLedgerEntryPE1(creditorLedgerEntryPE2)){
+			if (validateFAMEntryPE1(debitorFACreditorPE2)){
+				if (validateFBMEntryPE1(creditorFBMEntryPE2))
+					//Succesful validation
+				else
+					//Validation FBMEntryPE2 error
+			}
+			else
+				//Validation FAMEntryPE2 error
+		}
+		else
+			//Validation ledgerEntryPE2
 	}
 	
 	public void paymentProtocolCreditorPhase4(){
 		//With the creditor corresponding three partial files the next final entries are created:
 
 		//creditorLedger
-		//createLedgerEntryFinal();
+		AccountLedgerEntry creditorLedgerEntry = PastEntryFactory.createFinalAccountLedgerEntry();
 		//debitorFACreditor
-		//createFAMEntryFinal();
+		FAMEntry debitorFACreditor = PastEntryFactory.createFinalFAMEntry();
 		//creditorFBEntry
-		//createFBMEntryFinal();
+		FBMEntry creditorFBMEntry = PastEntryFactory.createFinalFBMEntry();
 	}
 	
 	private AccountLedgerEntry loadLastAccountLedgerEntry(){
@@ -281,6 +428,7 @@ public class Core implements CoreObserver {
 	 */
 	@Override
 	public synchronized void onReceiveNotification(NotificationPair notificationPair) {
+		notificationsReceived.put(notificationPair.getRef(), notificationPair);
 		guiObserver.onReceiveNotification("");
 	}
 

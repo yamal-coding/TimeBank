@@ -50,6 +50,10 @@ public class P2PLayer implements Application {
 		this.connected = false;
 	}
 	
+	/**
+	 * Returns the PastryIdFactory instance
+	 * @return idFactory
+	 */
 	public PastryIdFactory getPastryIdFactory(){
 		return idFactory;
 	}
