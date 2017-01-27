@@ -65,6 +65,7 @@ public class Core implements CoreObserver {
 		this.privateProfile = privateProfile;
 		this.p2pLayer.addObserver(this);
 		this.loadPublicProfileSemaphore = new Semaphore(0);
+		this.loadTransactionsSemaphore = new Semaphore(0);
 	}
 	
 	/**
@@ -122,8 +123,8 @@ public class Core implements CoreObserver {
 					}
 				} catch (InterruptedException e) {
 					guiObserver.failedConnection();
-				}*/
-				
+				}
+				*/
 				//This is a new alternative implemented with Semaphores
 				try {
 					//It is not necessary a successfully public profile load to load transactions
@@ -567,7 +568,7 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public synchronized void onLookupBill(PastContent bill, boolean error, String msg) {
+	public /*synchronized*/ void onLookupBill(PastContent bill, boolean error, String msg) {
 		if (error){
 			//Handle error
 		}
@@ -590,7 +591,9 @@ public class Core implements CoreObserver {
 		
 		if (loadBillTrials == billsToload){
 			//notify to this slept thread waiting
-			this.notify();
+			//this.notify();
+			
+			loadTransactionsSemaphore.release();
 		}
 	}
 
@@ -672,7 +675,7 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public synchronized void onLookupPublicProfile(PastContent publicProfile, boolean error, String msg) {
+	public /*synchronized*/ void onLookupPublicProfile(PastContent publicProfile, boolean error, String msg) {
 		if (error){
 			guiObserver.onFailedPublicProfileLoad();
 		}
@@ -685,7 +688,9 @@ public class Core implements CoreObserver {
 				guiObserver.onFailedPublicProfileLoad();
 			}
 		}
-		notify();
+		//notify();
+		
+		loadPublicProfileSemaphore.release();
 	}
 
 	@Override

@@ -89,17 +89,17 @@ public class Demo {
 		Controller debitorController = new Controller(debitorCore);
 		Controller creditorController = new Controller(creditorCore);
 		
-		/*
+		
 		//Console gui
 		TerminalGUI creditorConsoleGUI = new TerminalGUI(creditorController, 9004, "192.168.1.37", 9003);
 		TerminalGUI debitorConsoleGUI = new TerminalGUI(debitorController, 9005, "192.168.1.37", 9003);
 		
 		//System.exit(0);
-		*/
+		
 		
 		//Graphic GUI
-		MainView debitorGraphicGUI = new MainView(debitorController, 9005, "192.168.1.37", 9003);
-		MainView creditorGraphicGUI = new MainView(creditorController, 9004, "192.168.1.37", 9003);
+		//MainView debitorGraphicGUI = new MainView(debitorController, 9005, "192.168.1.37", 9003);
+		//MainView creditorGraphicGUI = new MainView(creditorController, 9004, "192.168.1.37", 9003);
 		
 	}
 	
