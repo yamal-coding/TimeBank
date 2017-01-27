@@ -2,6 +2,7 @@ package timebank.model;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.PastContent;
@@ -46,6 +47,11 @@ public class Core implements CoreObserver {
 	private volatile Map<String, NotificationPair> notificationsReceived;
 	
 	
+	//Semaphores to suspend the execution when a DHT Content is looked for. These calls to the P2PLayer
+	//are handle in a new Thread because FreePastry is implemented by this way
+	private Semaphore loadPublicProfileSemaphore;
+	private Semaphore loadTransactionsSemaphore;
+	
 	/**
 	 * Core constructor
 	 * @param p2pLayer
@@ -58,6 +64,7 @@ public class Core implements CoreObserver {
 		this.p2pLayer = p2pLayer;
 		this.privateProfile = privateProfile;
 		this.p2pLayer.addObserver(this);
+		this.loadPublicProfileSemaphore = new Semaphore(0);
 	}
 	
 	/**
@@ -88,11 +95,13 @@ public class Core implements CoreObserver {
 				//or successful to the GUI
 				loadPublicProfile();
 
-				try{
+				/*try{
 					//It is not necessary a successfully public profile load to load transactions
-					//but the response has to be received firstly. The implemented observer method
+					//but the response has to be received first. The implemented observer method
 					//"onLookupPublicProfile" wakes up this waiting thread
 					wait();
+					
+					
 					
 					//User transactions are loaded from DHT
 					if (privateProfile.getTransactionsDHTHashes().isEmpty())
@@ -113,11 +122,48 @@ public class Core implements CoreObserver {
 					}
 				} catch (InterruptedException e) {
 					guiObserver.failedConnection();
+				}*/
+				
+				//This is a new alternative implemented with Semaphores
+				try {
+					//It is not necessary a successfully public profile load to load transactions
+					//but the response has to be received first. The implemented observer method
+					//"onLookupPublicProfile" release the semaphore and the execution in this point
+					//can continue
+					loadPublicProfileSemaphore.acquire();
+					
+					//User transactions are loaded from DHT
+					if (privateProfile.getTransactionsDHTHashes().isEmpty())
+						//notify to the GUI that there are  not any pending transaction
+						guiObserver.onNoPendingTransactions();
+					else {
+						loadBillTrials = 0;
+						loadTransactions();
+						//It is necessary to wait for having all bills loaded
+						//There may be bills that are not loaded but an error is returned in that case
+						//The implemented observer method onLookupBill release the semaphore
+						//when the last bill is loaded from DHT
+						loadTransactionsSemaphore.acquire();
+						
+						for (Map.Entry<String, Bill> entry : loadedBills.entrySet())
+							guiObserver.onTransactionLoaded(entry.getValue().getSelf_transRef());
+						
+					}
+				} catch (InterruptedException e) {
+					guiObserver.failedConnection();
 				}
 		}
 	}
 	
+	/**
+	 * This method is called when a debitor of a payment start the payment
+	 * @param transRef
+	 * @param comment
+	 * @param degreeOfStisfaction
+	 */
 	public synchronized void paymentProtocolDebitorPhase1(String transRef, String comment, int degreeOfStisfaction){
+		//TODO
+		
 		//With the transaction reference given, the corresponding bill is loaded
 		Bill bill = loadedBills.get(transRef);
 		
@@ -162,6 +208,12 @@ public class Core implements CoreObserver {
 		
 		//the hashes and ids of the entries are sent as NotificationPairs objects to the creditor
 		//Notify when p2pLayer notifies to this class the successful storage
+		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
+		/*
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, creditorFADebitorPE1.getId(), hash, ref));
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, debitorFBMEntryPE1.getId(), hash, ref));
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, creditorFADebitorPE1.getId(), hash, ref));
+		*/
 	}
 
 	private void storeFilesDebitorPaymentProtocolPhase1(AccountLedgerEntry debitorLedgerEntryPE1,
@@ -174,15 +226,18 @@ public class Core implements CoreObserver {
 
 	
 	public void paymentProtocolCreditorPhase1(){
+		//TODO
+		
 		//With the NotificationPairs (id and hash) received from debitor, the creditor loads
 		//the corresponding files
-		
+		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
+		/*
 		p2pLayer.get(debitorLedgerEntryPE1Notification.getHash(), debitorLedgerEntryPE1Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
 		p2pLayer.get(creditorFADebitorPE1Notification.getHash(), creditorFADebitorPE1Notification.getId(), FileType.FAM_ENTRY);
 		p2pLayer.get(debitorFBMEntryPE1Notification.getHash(), debitorFBMEntryPE1Notification.getId(), FileType.FBM_ENTRY);
 		
 		
-		//Wait until the trhee files are successfully loaded
+		//Wait until the three files are successfully loaded
 		//wait()
 		
 		//Creditor validates these files. An error is returned if one or more files are not well formed
@@ -198,9 +253,13 @@ public class Core implements CoreObserver {
 		}
 		else
 			//Validation ledgerEntryPE1
+			 
+		*/
 	}
 	
 	public void paymentProtocolCreditorPhase2(String transRef, String comment, int degreeOfSatisfaction){
+		//TODO
+		
 		//Creditor loads from DHT the bill associated to the current payment
 		Bill bill = loadedBills.get(transRef);
 		
@@ -238,7 +297,10 @@ public class Core implements CoreObserver {
 		//creditorFBMPE1
 		FBMEntry creditorFBMEntryPE1 = PastEntryFactory.createFBMEntryPE1(lastFBM.getFBMEntryNum(), 
 				lastFBM.getId(), self_ledgerEntry_DHTHash, comment, degreeOfSatisfaction, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
-				
+		
+		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
+		
+		/*
 		//With the three files loaded previously the next partial entries are created
 		//debitorLedgerPE2
 		AccountLedgerEntry debitorLedgerEntryPE2 = PastEntryFactory.createAccountLedgerEntryPE2();
@@ -257,6 +319,7 @@ public class Core implements CoreObserver {
 		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
 		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
 		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
+		*/
 	}
 
 	private void storeFilesCreditorPaymentProtocolPhase2(AccountLedgerEntry creditorLedgerEntryPE1,
@@ -271,21 +334,26 @@ public class Core implements CoreObserver {
 	}
 	
 	public void paymentProtocolDebitorPhase2(){
+		//TODO
+		
 		//With the NotificationPairs (id and hash) received from creditor, the debitor loads
 		//the corresponding files
+		
+		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
+		/*
 		p2pLayer.get(creditorLedgerEntryPE1Notification.getHash(), creditorLedgerEntryPE1Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
 		p2pLayer.get(debitorFACreditorPE1Notification.getHash(), debitorFACreditorPE1Notification.getId(), FileType.FAM_ENTRY);
 		p2pLayer.get(creditorFBMEntryNotification.getHash(), creditorFBMEntryNotification.getId(), FileType.FBM_ENTRY);
 		p2pLayer.get(debitorLedgerEntryPE2Notification.getHash(), debitorLedgerEntryPE2Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
 		p2pLayer.get(creditorFADebitorPE2Notification.getHash(), creditorFADebitorPE2Notification.getId(), FileType.FAM_ENTRY);
 		p2pLayer.get(debitorFBMEntryPE2Notification.getHash(), debitorFBMEntryPE2Notification.getId(), FileType.FBM_ENTRY);
-	
+		
 		
 		//Debitor validates these files. An error is returned if one or more files are not well formed
 
 		//Wait until the trhee files are successfully loaded
 		//wait()
-		/*
+		
 		//Creditor validates these files. An error is returned if one or more files are not well formed
 		if (validateLedgerEntryPE1(creditorLedgerEntryPE1)){
 			if (validateFAMEntryPE1(debitorFACreditorPE1)){
@@ -312,6 +380,11 @@ public class Core implements CoreObserver {
 	}
 	
 	public void paymentProtocolDebitorPhase3(){
+		//TODO
+		
+		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
+		
+		/*
 		//With the debitor corresponding three partial files the next final entries are created:
 		
 		//debitorLedger
@@ -337,6 +410,7 @@ public class Core implements CoreObserver {
 		
 		
 		//the hashes and ids of the entries are sent as NotificationPairs objects to the creditor
+		*/
 	}
 
 	private void storeFIlesDebitorPaymentProtocolPhase3(AccountLedgerEntry debitorLedgerEntry,
@@ -351,6 +425,11 @@ public class Core implements CoreObserver {
 	}
 	
 	public void paymentProtocolCreditorPhase3(String transRef){
+		//TODO
+		
+		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE		
+		
+		/*
 		//With the NotificationPairs (id and hash) received from debitor, the creditor loads
 		//the corresponding files
 		NotificationPair creditorLedgerEntryPE2Notification = notificationsReceived.get("");
@@ -377,9 +456,15 @@ public class Core implements CoreObserver {
 		}
 		else
 			//Validation ledgerEntryPE2
+			 
+		*/
 	}
 	
 	public void paymentProtocolCreditorPhase4(){
+		//TODO
+		
+		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
+		/*		
 		//With the creditor corresponding three partial files the next final entries are created:
 
 		//creditorLedger
@@ -388,6 +473,7 @@ public class Core implements CoreObserver {
 		FAMEntry debitorFACreditor = PastEntryFactory.createFinalFAMEntry();
 		//creditorFBEntry
 		FBMEntry creditorFBMEntry = PastEntryFactory.createFinalFBMEntry();
+		*/
 	}
 	
 	private AccountLedgerEntry loadLastAccountLedgerEntry(){
