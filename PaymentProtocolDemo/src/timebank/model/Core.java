@@ -18,6 +18,7 @@ import timebank.model.files.network.persistent.PublicProfile;
 import timebank.model.messaging.NotificationPair;
 import timebank.model.p2p.P2PLayer;
 import timebank.model.util.Util;
+import timebank.model.validation.EntryValidator;
 import timebank.observer.CoreObserver;
 import timebank.observer.GUIObserver;
 
@@ -30,6 +31,9 @@ import timebank.observer.GUIObserver;
 public class Core implements CoreObserver {
 	//Object used to call P2P methods and delegate these tasks
 	private P2PLayer p2pLayer;
+	
+	//Object used to validate each partial entry during payment process 
+	private EntryValidator entryValidator;
 	
 	//Observer to communicate with GUI
 	private GUIObserver guiObserver;
@@ -58,12 +62,19 @@ public class Core implements CoreObserver {
 	 */
 	public Core(P2PLayer p2pLayer, PrivateProfile privateProfile){
 		this.loadedBills = new HashMap<String, Bill>();
+		
 		this.notificationsReceived = new HashMap<String, NotificationPair>();
+		
 		this.billsToload = privateProfile.getTransactionsDHTHashes().size();
 		this.loadBillTrials = 0;
-		this.p2pLayer = p2pLayer;
+
 		this.privateProfile = privateProfile;
+		
+		this.p2pLayer = p2pLayer;
 		this.p2pLayer.addObserver(this);
+		
+		this.entryValidator = new EntryValidator();	
+		
 		this.loadPublicProfileSemaphore = new Semaphore(0);
 		this.loadTransactionsSemaphore = new Semaphore(0);
 	}
@@ -96,36 +107,6 @@ public class Core implements CoreObserver {
 				//or successful to the GUI
 				loadPublicProfile();
 
-				/*try{
-					//It is not necessary a successfully public profile load to load transactions
-					//but the response has to be received first. The implemented observer method
-					//"onLookupPublicProfile" wakes up this waiting thread
-					wait();
-					
-					
-					
-					//User transactions are loaded from DHT
-					if (privateProfile.getTransactionsDHTHashes().isEmpty())
-						//notify to the GUI that there are  not any pending transaction
-						guiObserver.onNoPendingTransactions();
-					else {
-						loadBillTrials = 0;
-						loadTransactions();
-						//It is necessary to wait for having all bills loaded
-						//There may be bills that are not loaded but an error is returned in that case
-						//The implemented observer method onLookupBill wakes up this waiting thread
-						//when the last bill is loaded from DHT
-						wait();
-						
-						for (Map.Entry<String, Bill> entry : loadedBills.entrySet())
-							guiObserver.onTransactionLoaded(entry.getValue().getSelf_transRef());
-						
-					}
-				} catch (InterruptedException e) {
-					guiObserver.failedConnection();
-				}
-				*/
-				//This is a new alternative implemented with Semaphores
 				try {
 					//It is not necessary a successfully public profile load to load transactions
 					//but the response has to be received first. The implemented observer method
@@ -225,9 +206,14 @@ public class Core implements CoreObserver {
 	}
 
 
-	
-	public void paymentProtocolCreditorPhase1(){
+	/**
+	 * The creditor starts his corresponding payment phase with a reference to a notification received
+	 * @param notificationRef
+	 */
+	public void paymentProtocolCreditorPhase1(String notificationRef){
 		//TODO
+		
+		NotificationPair debitorLedgerEntryPE1Notification;
 		
 		//With the NotificationPairs (id and hash) received from debitor, the creditor loads
 		//the corresponding files
@@ -236,26 +222,13 @@ public class Core implements CoreObserver {
 		p2pLayer.get(debitorLedgerEntryPE1Notification.getHash(), debitorLedgerEntryPE1Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
 		p2pLayer.get(creditorFADebitorPE1Notification.getHash(), creditorFADebitorPE1Notification.getId(), FileType.FAM_ENTRY);
 		p2pLayer.get(debitorFBMEntryPE1Notification.getHash(), debitorFBMEntryPE1Notification.getId(), FileType.FBM_ENTRY);
-		
+		*/
 		
 		//Wait until the three files are successfully loaded
 		//wait()
 		
 		//Creditor validates these files. An error is returned if one or more files are not well formed
-		if (validateLedgerEntryPE1(debitorLedgerEntryPE1)){
-			if (validateFAMEntryPE1(creditorFADebitorPE1)){
-				if (validateFBMEntryPE1(debitorFBMEntryPE1))
-					//Succesful validation
-				else
-					//Validation FBMEntryPE1 error
-			}
-			else
-				//Validation FAMEntryPE1 error
-		}
-		else
-			//Validation ledgerEntryPE1
-			 
-		*/
+		entryValidator.validatePaymentPhase1();
 	}
 	
 	public void paymentProtocolCreditorPhase2(String transRef, String comment, int degreeOfSatisfaction){
@@ -348,7 +321,7 @@ public class Core implements CoreObserver {
 		p2pLayer.get(debitorLedgerEntryPE2Notification.getHash(), debitorLedgerEntryPE2Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
 		p2pLayer.get(creditorFADebitorPE2Notification.getHash(), creditorFADebitorPE2Notification.getId(), FileType.FAM_ENTRY);
 		p2pLayer.get(debitorFBMEntryPE2Notification.getHash(), debitorFBMEntryPE2Notification.getId(), FileType.FBM_ENTRY);
-		
+		*/
 		
 		//Debitor validates these files. An error is returned if one or more files are not well formed
 
@@ -356,28 +329,7 @@ public class Core implements CoreObserver {
 		//wait()
 		
 		//Creditor validates these files. An error is returned if one or more files are not well formed
-		if (validateLedgerEntryPE1(creditorLedgerEntryPE1)){
-			if (validateFAMEntryPE1(debitorFACreditorPE1)){
-				if (validateFBMEntryPE1(creditorFBMEntryPE1))
-					if (validateLedgerEntryPE2(debitorLedgerEntryPE2))
-						if (validateFAMEntryPE2(creditorFADebitorPE2)){
-							if (validateFBMEntryPE2(debitorFBMEntryPE2)){
-								//successful validation
-							else
-								//Validation FBMEntryPE2 error
-						}
-						else
-							//Validation FAMEntryPE2 error
-					}
-					else
-						//Validation ledgerEntryPE2 error
-				}
-				else
-					//Validation FBMEntryPE1 error
-			}else
-				//Validation FAMEntryPE1 error
-		}else
-			//Validation ledgerEntryPE1*/
+		entryValidator.validatePaymentPhase2();
 	}
 	
 	public void paymentProtocolDebitorPhase3(){
@@ -440,25 +392,13 @@ public class Core implements CoreObserver {
 		p2pLayer.get(creditorLedgerEntryPE2Notification.getHash(), creditorLedgerEntryPE2Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
 		p2pLayer.get(debitorFACreditorPE2Notification.getHash(), debitorFACreditorPE2Notification.getId(), FileType.FAM_ENTRY);
 		p2pLayer.get(creditorFBMEntryPE2Notification.getHash(), creditorFBMEntryPE2Notification.getId(), FileType.FBM_ENTRY);
+		*/
 		
 		//Wait until the trhee files are successfully loaded
 		//wait()
 		
 		//Creditor validates these files. An error is returned if one or more files are not well formed
-		if (validateLedgerEntryPE1(creditorLedgerEntryPE2)){
-			if (validateFAMEntryPE1(debitorFACreditorPE2)){
-				if (validateFBMEntryPE1(creditorFBMEntryPE2))
-					//Succesful validation
-				else
-					//Validation FBMEntryPE2 error
-			}
-			else
-				//Validation FAMEntryPE2 error
-		}
-		else
-			//Validation ledgerEntryPE2
-			 
-		*/
+		entryValidator.validatePaymentPhase3();
 	}
 	
 	public void paymentProtocolCreditorPhase4(){
@@ -591,8 +531,7 @@ public class Core implements CoreObserver {
 		
 		if (loadBillTrials == billsToload){
 			//notify to this slept thread waiting
-			//this.notify();
-			
+
 			loadTransactionsSemaphore.release();
 		}
 	}
@@ -688,7 +627,6 @@ public class Core implements CoreObserver {
 				guiObserver.onFailedPublicProfileLoad();
 			}
 		}
-		//notify();
 		
 		loadPublicProfileSemaphore.release();
 	}
