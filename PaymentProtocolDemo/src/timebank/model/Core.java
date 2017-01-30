@@ -7,6 +7,7 @@ import java.util.concurrent.Semaphore;
 import rice.p2p.commonapi.Id;
 import rice.p2p.past.PastContent;
 import timebank.factory.PastEntryFactory;
+import timebank.model.exception.NodeNotInitializedException;
 import timebank.model.files.local.PrivateProfile;
 import timebank.model.files.network.persistent.AccountLedgerEntry;
 import timebank.model.files.network.persistent.Bill;
@@ -15,7 +16,9 @@ import timebank.model.files.network.persistent.FAMEntry;
 import timebank.model.files.network.persistent.FBMEntry;
 import timebank.model.files.network.persistent.FileType;
 import timebank.model.files.network.persistent.PublicProfile;
-import timebank.model.messaging.NotificationPair;
+import timebank.model.messaging.Messenger;
+import timebank.model.messaging.Notification;
+import timebank.model.messaging.NotificationPaymentPhase1;
 import timebank.model.p2p.P2PLayer;
 import timebank.model.util.Util;
 import timebank.model.validation.EntryValidator;
@@ -35,6 +38,9 @@ public class Core implements CoreObserver {
 	//Object used to validate each partial entry during payment process 
 	private EntryValidator entryValidator;
 	
+	//Object used to send, received and store messages from/to others nodes
+	private Messenger messenger;
+		
 	//Observer to communicate with GUI
 	private GUIObserver guiObserver;
 	
@@ -48,7 +54,7 @@ public class Core implements CoreObserver {
 	private volatile int loadBillTrials;
 	
 	//Notifications associated to each Payment. The transaction reference is used
-	private volatile Map<String, NotificationPair> notificationsReceived;
+	private volatile Map<String, Notification> notificationsReceived;
 	
 	
 	//Semaphores to suspend the execution when a DHT Content is looked for. These calls to the P2PLayer
@@ -63,7 +69,7 @@ public class Core implements CoreObserver {
 	public Core(P2PLayer p2pLayer, PrivateProfile privateProfile){
 		this.loadedBills = new HashMap<String, Bill>();
 		
-		this.notificationsReceived = new HashMap<String, NotificationPair>();
+		this.notificationsReceived = new HashMap<String, Notification>();
 		
 		this.billsToload = privateProfile.getTransactionsDHTHashes().size();
 		this.loadBillTrials = 0;
@@ -72,6 +78,13 @@ public class Core implements CoreObserver {
 		
 		this.p2pLayer = p2pLayer;
 		this.p2pLayer.addObserver(this);
+		
+		try {
+			this.messenger = new Messenger(p2pLayer.getNode(), this);
+		} catch (NodeNotInitializedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		
 		this.entryValidator = new EntryValidator();	
 		
@@ -188,14 +201,18 @@ public class Core implements CoreObserver {
 		//store the corresponding entries into DHT
 		storeFilesDebitorPaymentProtocolPhase1(debitorLedgerEntryPE1, creditorFADebitorPE1, debitorFBMEntryPE1);
 		
-		//the hashes and ids of the entries are sent as NotificationPairs objects to the creditor
+		//the hashes and ids of the entries are sent as Notification objects to the creditor
 		//Notify when p2pLayer notifies to this class the successful storage
-		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
-		/*
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, creditorFADebitorPE1.getId(), hash, ref));
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, debitorFBMEntryPE1.getId(), hash, ref));
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, creditorFADebitorPE1.getId(), hash, ref));
-		*/
+		Notification notificationPhase1;
+		try {
+			notificationPhase1 = new NotificationPaymentPhase1(p2pLayer.getNode().getId(), 
+					debitorLedgerEntryPE1, creditorFADebitorPE1, debitorFBMEntryPE1);
+			messenger.sendNotification(null, notificationPhase1);
+		} catch (NodeNotInitializedException e) {
+			// TODO
+			
+			//NOTIFY THE ERROR OF THE OPERATION
+		}
 	}
 
 	private void storeFilesDebitorPaymentProtocolPhase1(AccountLedgerEntry debitorLedgerEntryPE1,
@@ -213,7 +230,7 @@ public class Core implements CoreObserver {
 	public void paymentProtocolCreditorPhase1(String notificationRef){
 		//TODO
 		
-		NotificationPair debitorLedgerEntryPE1Notification;
+		Notification debitorLedgerEntryPE1Notification;
 		
 		//With the NotificationPairs (id and hash) received from debitor, the creditor loads
 		//the corresponding files
@@ -293,6 +310,9 @@ public class Core implements CoreObserver {
 		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
 		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
 		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
 		*/
 	}
 
@@ -325,7 +345,7 @@ public class Core implements CoreObserver {
 		
 		//Debitor validates these files. An error is returned if one or more files are not well formed
 
-		//Wait until the trhee files are successfully loaded
+		//Wait until the three files are successfully loaded
 		//wait()
 		
 		//Creditor validates these files. An error is returned if one or more files are not well formed
@@ -338,7 +358,7 @@ public class Core implements CoreObserver {
 		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
 		
 		/*
-		//With the debitor corresponding three partial files the next final entries are created:
+		//With the three debtor corresponding partial entries, the next three final entries are created:
 		
 		//debitorLedger
 		AccountLedgerEntry debitorLedgerEntry = PastEntryFactory.createFinalAccountLedgerEntry();
@@ -363,6 +383,9 @@ public class Core implements CoreObserver {
 		
 		
 		//the hashes and ids of the entries are sent as NotificationPairs objects to the creditor
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
+		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
 		*/
 	}
 
@@ -479,7 +502,7 @@ public class Core implements CoreObserver {
 	 * Method called when a notification is received from another node
 	 */
 	@Override
-	public synchronized void onReceiveNotification(NotificationPair notificationPair) {
+	public synchronized void onReceiveNotification(Notification notificationPair) {
 		notificationsReceived.put(notificationPair.getRef(), notificationPair);
 		guiObserver.onReceiveNotification("");
 	}

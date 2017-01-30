@@ -1,7 +1,7 @@
 package timebank.observer;
 
 import rice.p2p.past.PastContent;
-import timebank.model.messaging.NotificationPair;
+import timebank.model.messaging.Notification;
 
 /**
  * Interface used by P2PLayer to communicate with Core
@@ -9,7 +9,7 @@ import timebank.model.messaging.NotificationPair;
  *
  */
 public interface CoreObserver {
-	public void onReceiveNotification(NotificationPair notificationPair);
+	public void onReceiveNotification(Notification notificationPair);
 	
 	public void onFinishedStorage(String msg, boolean error);
 	

@@ -8,4 +8,7 @@ package timebank.model.validation;
  */
 public enum ValidationResultCode {
 	//TODO
+	PHASE1_VALIDATION_OK, //The partial DHT entries created in the first stage of the payment has been validated successfully
+	PHASE2_VALIDATION_OK, //The partial DHT entries created in the second stage of the payment has been validated successfully
+	PHASE3_VALIDATION_OK  //The partial DHT entries created in the third stage of the payment has been validated successfully
 }

@@ -17,8 +17,9 @@ import rice.pastry.PastryNode;
 import rice.pastry.commonapi.PastryIdFactory;
 import rice.persistence.Storage;
 import timebank.model.ConnectionReturnCode;
+import timebank.model.exception.NodeNotInitializedException;
 import timebank.model.files.network.persistent.FileType;
-import timebank.model.messaging.NotificationPair;
+import timebank.model.messaging.Notification;
 import timebank.observer.CoreObserver;
 
 /**
@@ -26,12 +27,12 @@ import timebank.observer.CoreObserver;
  * @author yamal
  *
  */
-public class P2PLayer implements Application {
+public class P2PLayer {
 	private Environment env;
 	private PastryIdFactory idFactory;
 	private Past past;
 	private PastryNode node;
-	private Endpoint endpoint;
+	private boolean endpointCreated;
 	
 	//Observer to communicate with application core
 	private CoreObserver coreObserver;
@@ -47,6 +48,19 @@ public class P2PLayer implements Application {
 	public P2PLayer(Environment env){
 		this.env = env;
 		this.connected = false;
+		this.endpointCreated = false;
+	}
+	
+	/**
+	 * This method returns the node assigned to the connection. If it is not created yet, an exception is thrown.
+	 * @return
+	 * @throws NodeNotInitializedException
+	 */
+	public PastryNode getNode() throws NodeNotInitializedException{
+		if (!connected)
+			throw new NodeNotInitializedException();
+		
+		return this.node;
 	}
 	
 	/**
@@ -95,10 +109,6 @@ public class P2PLayer implements Application {
 				
 				//At this moment the PastryNode can join the network 
 				P2PUtil.connectNode(node, bootInetSocketAddress);
-				
-				//The endpoint is initialized to allow receiving and sending messages from others and to other nodes
-				this.endpoint = node.buildEndpoint(this, "myinstance");
-				this.endpoint.register();
 				
 				//Now we can notify to the observers the connection success
 				connected = true;
@@ -216,39 +226,5 @@ public class P2PLayer implements Application {
 				coreObserver.onLookupPublicProfile(arg0, false, successfullMsg);
 			}
 		}
-	}
-
-	/**
-	 * Method used to send a message to a concrete node through his NodeHandle
-	 * @param nh
-	 * @param msg
-	 */
-	public void sendNotification(NodeHandle nh, Message msg){
-		endpoint.route(null, msg, nh);
-	}
-	
-	/**
-	 * This method is called when a Message object is received from other PastryNode
-	 */
-	@Override
-	public void deliver(Id arg0, Message arg1) {
-		try {
-			NotificationPair notificationPair = (NotificationPair) arg1;
-			coreObserver.onReceiveNotification(notificationPair);
-		}
-		catch (ClassCastException e){
-			
-		}
-	}
-
-	@Override
-	public boolean forward(RouteMessage arg0) {
-		return true;
-	}
-
-	@Override
-	public void update(NodeHandle arg0, boolean arg1) {
-		// TODO Auto-generated method stub
-		
 	}
 }
