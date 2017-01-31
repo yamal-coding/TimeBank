@@ -1,19 +1,16 @@
 package timebank.model.messaging;
 
 import rice.p2p.commonapi.Id;
-import timebank.model.files.network.persistent.AccountLedgerEntry;
-import timebank.model.files.network.persistent.FAMEntry;
-import timebank.model.files.network.persistent.FBMEntry;
 
-public class NotificationPaymentPhase1 extends Notification {
+public class NotificationPaymentPhase1 extends NotificationPayment {
 	
-	private AccountLedgerEntry debitorLedgerPE1;
-	private FAMEntry creditorFADebitorPE1;
-	private FBMEntry debitorFBMPE1;
+	private Id debitorLedgerPE1;
+	private Id creditorFADebitorPE1;
+	private Id debitorFBMPE1;
 	
-	public NotificationPaymentPhase1(Id from, AccountLedgerEntry debitorLedgerPE1,
-			FAMEntry creditorFADebitorPE1, FBMEntry debitorFBMPE1) {
-		super(from);
+	public NotificationPaymentPhase1(Id from, String transRef, Id debitorLedgerPE1,
+			Id creditorFADebitorPE1, Id debitorFBMPE1) {
+		super(from, transRef);
 		this.debitorLedgerPE1 = debitorLedgerPE1;
 		this.creditorFADebitorPE1 = creditorFADebitorPE1;
 		this.debitorFBMPE1 = debitorFBMPE1;
@@ -24,15 +21,15 @@ public class NotificationPaymentPhase1 extends Notification {
 		return NotificationType.DEBITOR_PAYMENT_PHASE1;
 	}
 
-	public AccountLedgerEntry getDebitorLedgerPE1() {
+	public Id getDebitorLedgerPE1Hash() {
 		return debitorLedgerPE1;
 	}
 
-	public FAMEntry getCreditorFADebitorPE1() {
+	public Id getCreditorFADebitorPE1Hash() {
 		return creditorFADebitorPE1;
 	}
 
-	public FBMEntry getDebitorFBMPE1() {
+	public Id getDebitorFBMPE1Hash() {
 		return debitorFBMPE1;
 	}
 }

@@ -8,6 +8,7 @@ import rice.p2p.commonapi.Id;
 import rice.p2p.past.PastContent;
 import timebank.factory.PastEntryFactory;
 import timebank.model.exception.NodeNotInitializedException;
+import timebank.model.exception.NonExistingNotificationException;
 import timebank.model.files.local.PrivateProfile;
 import timebank.model.files.network.persistent.AccountLedgerEntry;
 import timebank.model.files.network.persistent.Bill;
@@ -19,6 +20,8 @@ import timebank.model.files.network.persistent.PublicProfile;
 import timebank.model.messaging.Messenger;
 import timebank.model.messaging.Notification;
 import timebank.model.messaging.NotificationPaymentPhase1;
+import timebank.model.messaging.NotificationPaymentPhase2;
+import timebank.model.messaging.NotificationPaymentPhase3;
 import timebank.model.p2p.P2PLayer;
 import timebank.model.util.Util;
 import timebank.model.validation.EntryValidator;
@@ -203,10 +206,10 @@ public class Core implements CoreObserver {
 		
 		//the hashes and ids of the entries are sent as Notification objects to the creditor
 		//Notify when p2pLayer notifies to this class the successful storage
-		Notification notificationPhase1;
+		
 		try {
-			notificationPhase1 = new NotificationPaymentPhase1(p2pLayer.getNode().getId(), 
-					debitorLedgerEntryPE1, creditorFADebitorPE1, debitorFBMEntryPE1);
+			Notification notificationPhase1 = new NotificationPaymentPhase1(p2pLayer.getNode().getId(), transRef,
+					debitorLedgerEntryPE1.getId(), creditorFADebitorPE1.getId(), debitorFBMEntryPE1.getId());
 			messenger.sendNotification(null, notificationPhase1);
 		} catch (NodeNotInitializedException e) {
 			// TODO
@@ -230,22 +233,31 @@ public class Core implements CoreObserver {
 	public void paymentProtocolCreditorPhase1(String notificationRef){
 		//TODO
 		
-		Notification debitorLedgerEntryPE1Notification;
+		try {
+			NotificationPaymentPhase1 notificationPhase1 = (NotificationPaymentPhase1) messenger.getNotification(notificationRef);
+			
+			//With the NotificationPairs (id and hash) received from debtor, the creditor loads
+			//the corresponding files
+			p2pLayer.get(notificationPhase1.getDebitorLedgerPE1Hash(), "", FileType.ACCOUNT_LEDGER_ENTRY);
+			p2pLayer.get(notificationPhase1.getCreditorFADebitorPE1Hash(), "", FileType.FAM_ENTRY);
+			p2pLayer.get(notificationPhase1.getDebitorFBMPE1Hash(), "", FileType.FBM_ENTRY);
+			
+			//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
+			
+			//Wait until the three files are successfully loaded
+			//wait()
+			
+			//Creditor validates these files. An error is returned if one or more files are not well formed
+			entryValidator.validatePaymentPhase1();
 		
-		//With the NotificationPairs (id and hash) received from debitor, the creditor loads
-		//the corresponding files
-		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
-		/*
-		p2pLayer.get(debitorLedgerEntryPE1Notification.getHash(), debitorLedgerEntryPE1Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
-		p2pLayer.get(creditorFADebitorPE1Notification.getHash(), creditorFADebitorPE1Notification.getId(), FileType.FAM_ENTRY);
-		p2pLayer.get(debitorFBMEntryPE1Notification.getHash(), debitorFBMEntryPE1Notification.getId(), FileType.FBM_ENTRY);
-		*/
 		
-		//Wait until the three files are successfully loaded
-		//wait()
-		
-		//Creditor validates these files. An error is returned if one or more files are not well formed
-		entryValidator.validatePaymentPhase1();
+		} catch (NonExistingNotificationException e) {
+			// TODO Auto-generated catch block
+			
+			//Error loading the notification
+			
+			e.printStackTrace();
+		}
 	}
 	
 	public void paymentProtocolCreditorPhase2(String transRef, String comment, int degreeOfSatisfaction){
@@ -291,29 +303,46 @@ public class Core implements CoreObserver {
 		
 		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
 		
+		//TODO
+		//Tengo que poner el hash adecuado, y no el de las entradas parciales!!!!!!!
 		/*
 		//With the three files loaded previously the next partial entries are created
 		//debitorLedgerPE2
-		AccountLedgerEntry debitorLedgerEntryPE2 = PastEntryFactory.createAccountLedgerEntryPE2();
+		AccountLedgerEntry debitorLedgerEntryPE2 = 
+				PastEntryFactory.createAccountLedgerEntryPE2(debitorLedgerEntryPE1, 
+						creditorFBMEntryPE1.getId(), creditorLedgerEntryPE1.getId(), 
+						"Creditor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+		
 		//creditorFADebitorPE2
-		FAMEntry creditorFADebitorPE2 = PastEntryFactory.createFAMEntryPE2();
+		FAMEntry creditorFADebitorPE2 = PastEntryFactory.createFAMEntryPE2(creditorFADebitorPE1, 
+				comment, degreeOfSatisfaction, creditorFBMEntryPE1.getId(), 
+				"creditor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+		
+		
 		//debitorFBEntryPE2
-		FBMEntry debitorFBMEntryPE2 = PastEntryFactory.createFBMEntryPE2();
+		FBMEntry debitorFBMEntryPE2 = PastEntryFactory.createFBMEntryPE2(debitorFBMEntryPE1, 
+				debitorFACreditorPE1.getId(), p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+		
 		
 		//store the corresponding entries into DHT
 		storeFilesCreditorPaymentProtocolPhase2(creditorLedgerEntryPE1, debitorFACreditorPE1, creditorFBMEntryPE1,
 				debitorLedgerEntryPE2, creditorFADebitorPE2, debitorFBMEntryPE2);
 		
 		//Notify when p2pLayer notifies to this class the successful storage
-		wait();
+		//wait();
+		
 		//the hashes and ids of the entries are sent as NotificationPairs objects to the debitor
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
-		*/
+		Notification notificationPhase2;
+		try {
+			notificationPhase2 = new NotificationPaymentPhase2(p2pLayer.getNode().getId(), transRef, 
+					creditorLedgerEntryPE1.getId(), debitorFACreditorPE1.getId(), creditorFBMEntryPE1.getId(),
+					debitorLedgerEntryPE2.getId(), creditorFADebitorPE2.getId(), debitorFBMEntryPE2.getId());
+		
+			messenger.sendNotification(null, notificationPhase2);
+		} catch (NodeNotInitializedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}*/
 	}
 
 	private void storeFilesCreditorPaymentProtocolPhase2(AccountLedgerEntry creditorLedgerEntryPE1,
@@ -327,65 +356,91 @@ public class Core implements CoreObserver {
 		p2pLayer.put(debitorFBMEntryPE2, "debitorFBMEntryPE2", FileType.FBM_ENTRY);
 	}
 	
-	public void paymentProtocolDebitorPhase2(){
+	public void paymentProtocolDebitorPhase2(String notificationRef){
 		//TODO
 		
-		//With the NotificationPairs (id and hash) received from creditor, the debitor loads
-		//the corresponding files
+		try {
+			NotificationPaymentPhase2 creditorNotification = (NotificationPaymentPhase2) messenger.getNotification(notificationRef);
 		
-		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
-		/*
-		p2pLayer.get(creditorLedgerEntryPE1Notification.getHash(), creditorLedgerEntryPE1Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
-		p2pLayer.get(debitorFACreditorPE1Notification.getHash(), debitorFACreditorPE1Notification.getId(), FileType.FAM_ENTRY);
-		p2pLayer.get(creditorFBMEntryNotification.getHash(), creditorFBMEntryNotification.getId(), FileType.FBM_ENTRY);
-		p2pLayer.get(debitorLedgerEntryPE2Notification.getHash(), debitorLedgerEntryPE2Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
-		p2pLayer.get(creditorFADebitorPE2Notification.getHash(), creditorFADebitorPE2Notification.getId(), FileType.FAM_ENTRY);
-		p2pLayer.get(debitorFBMEntryPE2Notification.getHash(), debitorFBMEntryPE2Notification.getId(), FileType.FBM_ENTRY);
-		*/
-		
-		//Debitor validates these files. An error is returned if one or more files are not well formed
+			//With the NotificationPairs (id and hash) received from creditor, the debtor loads
+			//the corresponding files
+			
+			//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
+			
+			p2pLayer.get(creditorNotification.getCreditorLedgerPE1Hash(), "", FileType.ACCOUNT_LEDGER_ENTRY);
+			p2pLayer.get(creditorNotification.getDebitorFACreditorPE1Hash(), "", FileType.FAM_ENTRY);
+			p2pLayer.get(creditorNotification.getCreditorFBMPE1Hash(), "", FileType.FBM_ENTRY);
+			p2pLayer.get(creditorNotification.getDebitorLedgerPE2Hash(), "", FileType.ACCOUNT_LEDGER_ENTRY);
+			p2pLayer.get(creditorNotification.getCreditorFADebitorPE2Hash(), "", FileType.FAM_ENTRY);
+			p2pLayer.get(creditorNotification.getDebitorFBMPE2Hash(), "", FileType.FBM_ENTRY);
+			
+			
+			//Debitor validates these files. An error is returned if one or more files are not well formed
 
-		//Wait until the three files are successfully loaded
-		//wait()
+			//Wait until the three files are successfully loaded
+			//wait()
+			
+			//Creditor validates these files. An error is returned if one or more files are not well formed
+			entryValidator.validatePaymentPhase2();
 		
-		//Creditor validates these files. An error is returned if one or more files are not well formed
-		entryValidator.validatePaymentPhase2();
+		} catch (NonExistingNotificationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
-	public void paymentProtocolDebitorPhase3(){
+	public void paymentProtocolDebitorPhase3(String transRef){
 		//TODO
 		
 		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
 		
-		/*
+		
 		//With the three debtor corresponding partial entries, the next three final entries are created:
 		
+		//TODO
+		//El hash a lo mejor no hace falta calcularlo otra vez. Esta en las fbm y fam
+		/*
 		//debitorLedger
-		AccountLedgerEntry debitorLedgerEntry = PastEntryFactory.createFinalAccountLedgerEntry();
+		Id debitorLedgerEntryHash = Util.makeDHTHash(p2pLayer.getPastryIdFactory(), 
+				privateProfile.getUUID(), debitorLedgerEntryPE2.getEntryNum(), transRef, FileType.ACCOUNT_LEDGER_ENTRY, EntryType.FINAL_ENTRY);
+		AccountLedgerEntry debitorLedgerEntry = PastEntryFactory.createFinalAccountLedgerEntry(
+				debitorLedgerEntryPE2, debitorLedgerEntryHash, "Debtor digital signature");
+		
+		
 		//creditorFADebitor
-		FAMEntry creditorFADebitor = PastEntryFactory.createFinalFAMEntry();
+		Id creditorFADebitorHash = Util.makeDHTHash(p2pLayer.getPastryIdFactory(), 
+				privateProfile.getUUID(), creditorFADebitorPE2.getNumEntry(), transRef, FileType.FAM_ENTRY, EntryType.FINAL_ENTRY)
+		FAMEntry creditorFADebitor = PastEntryFactory.createFinalFAMEntry(creditorFADebitorPE2, 
+				creditorFADebitorHash, "Debtor digital signature");
+		
+		
 		//debitorFBEntry
-		FBMEntry debitorFBMEntry = PastEntryFactory.createFinalFBMEntry();
+		Id debitorFBMEntryPE2Hash = Util.makeDHTHash(p2pLayer.getPastryIdFactory(), 
+				privateProfile.getUUID(), debitorFBMEntryPE2.geNumEntry, transRef, FileType.FBM_ENTRY, EntryType.FINAL_ENTRY)
+		FBMEntry debitorFBMEntry = PastEntryFactory.createFinalFBMEntry(debitorFBMEntryPE2, debitorFBMEntryPE2Hash, "Debtor digital signature");
+		
 		
 		//The previous files are stored into the DHT
 		
-		//The debitor create the next partial entries with the other three partial entries loaded
+		//The debtor create the next partial entries with the other three partial entries loaded
 		//creditorLedgerEntryPE2
-		AccountLedgerEntry creditorLedgerEntryPE2 = PastEntryFactory.createAccountLedgerEntryPE2();
+		AccountLedgerEntry creditorLedgerEntryPE2 = PastEntryFactory.createAccountLedgerEntryPE2(
+				creditorLedgerEntryPE1, null, null, transRef, null, null);
+		
+		/*
 		//debitorFACreditorPE2
 		FAMEntry debitorFACreditorPE2 = PastEntryFactory.createFAMEntryPE2();
 		//creditorFBMEntryPE2
 		FBMEntry creditorFBMEntryPE2 = PastEntryFactory.createFBMEntryPE2();
-		
+		*/
+		/*
 		//The previous entries are stored into the DHT
 		storeFIlesDebitorPaymentProtocolPhase3(debitorLedgerEntry, creditorFADebitor, debitorFBMEntry,
 				creditorLedgerEntryPE2, debitorFACreditorPE2, creditorFBMEntryPE2);
 		
 		
 		//the hashes and ids of the entries are sent as NotificationPairs objects to the creditor
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
-		p2pLayer.sendNotification(nh, new NotificationPair(from, to, id, hash, ref));
+		//messenger.sendNotification(nh, msg);
 		*/
 	}
 
@@ -400,28 +455,30 @@ public class Core implements CoreObserver {
 		p2pLayer.put(creditorFBMEntryPE2, "creditorFBMEntryPE1", FileType.FBM_ENTRY);
 	}
 	
-	public void paymentProtocolCreditorPhase3(String transRef){
+	public void paymentProtocolCreditorPhase3(String notificationRef){
 		//TODO
 		
-		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE		
+		try {
+			NotificationPaymentPhase3 notificationPhase3 = (NotificationPaymentPhase3) messenger.getNotification(notificationRef);
 		
-		/*
-		//With the NotificationPairs (id and hash) received from debitor, the creditor loads
-		//the corresponding files
-		NotificationPair creditorLedgerEntryPE2Notification = notificationsReceived.get("");
-		NotificationPair debitorFACreditorPE2Notification = notificationsReceived.get("");
-		NotificationPair creditorFBMEntryPE2Notification = notificationsReceived.get("");
-		
-		p2pLayer.get(creditorLedgerEntryPE2Notification.getHash(), creditorLedgerEntryPE2Notification.getId(), FileType.ACCOUNT_LEDGER_ENTRY);
-		p2pLayer.get(debitorFACreditorPE2Notification.getHash(), debitorFACreditorPE2Notification.getId(), FileType.FAM_ENTRY);
-		p2pLayer.get(creditorFBMEntryPE2Notification.getHash(), creditorFBMEntryPE2Notification.getId(), FileType.FBM_ENTRY);
-		*/
-		
-		//Wait until the trhee files are successfully loaded
-		//wait()
-		
-		//Creditor validates these files. An error is returned if one or more files are not well formed
-		entryValidator.validatePaymentPhase3();
+			//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE		
+			
+			//With the NotificationPairs (id and hash) received from debitor, the creditor loads
+			//the corresponding files
+			
+			p2pLayer.get(notificationPhase3.getCreditorLedgerPE2(), "", FileType.ACCOUNT_LEDGER_ENTRY);
+			p2pLayer.get(notificationPhase3.getDebitorFACreditorPE2(), "", FileType.FAM_ENTRY);
+			p2pLayer.get(notificationPhase3.getCreditorFBMPE2(), "", FileType.FBM_ENTRY);
+						
+			//Wait until the trhee files are successfully loaded
+			//wait()
+			
+			//Creditor validates these files. An error is returned if one or more files are not well formed
+			entryValidator.validatePaymentPhase3();
+		} catch (NonExistingNotificationException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	public void paymentProtocolCreditorPhase4(){
