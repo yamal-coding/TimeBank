@@ -3,9 +3,8 @@ package timebank.model.files.network.persistent;
 import java.sql.Timestamp;
 
 import rice.p2p.commonapi.Id;
-import rice.p2p.past.ContentHashPastContent;
 
-public class FAMEntry extends ContentHashPastContent {
+public class FAMEntry extends DHTEntry {
 	//private String fileType;
 	private int FAMEntryNum;
 	private Id self_ledgerEntry_DHTHash;

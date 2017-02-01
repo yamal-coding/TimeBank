@@ -3,14 +3,13 @@ package timebank.model.files.network.persistent;
 import java.sql.Timestamp;
 
 import rice.p2p.commonapi.Id;
-import rice.p2p.past.ContentHashPastContent;
 
 /**
  * This class represents an AccountLedger DHT file
  * @author yamal
  *
  */
-public class AccountLedgerEntry extends ContentHashPastContent {
+public class AccountLedgerEntry extends DHTEntry {
 	//private String fileType;
 	private int ledgerEntryNum;
 	private Id billsEntry_DHTHash;

@@ -12,6 +12,7 @@ import timebank.model.exception.NonExistingNotificationException;
 import timebank.model.files.local.PrivateProfile;
 import timebank.model.files.network.persistent.AccountLedgerEntry;
 import timebank.model.files.network.persistent.Bill;
+import timebank.model.files.network.persistent.DHTEntry;
 import timebank.model.files.network.persistent.EntryType;
 import timebank.model.files.network.persistent.FAMEntry;
 import timebank.model.files.network.persistent.FBMEntry;
@@ -52,13 +53,15 @@ public class Core implements CoreObserver {
 	private PublicProfile publicProfile;
 	
 	//User's bills
-	private volatile Map<String, Bill> loadedBills;
-	private volatile int billsToload;
-	private volatile int loadBillTrials;
+	private /*volatile*/ Map<String, Bill> loadedBills;
+	private /*volatile*/ int billsToload;
+	private /*volatile*/ int loadBillTrials;
 	
 	//Notifications associated to each Payment. The transaction reference is used
-	private volatile Map<String, Notification> notificationsReceived;
+	private /*volatile*/ Map<String, Notification> notificationsReceived;
 	
+	//Entries loaded from DHT. They will be removed from the hash map when used
+	private /*volatile*/ Map<Id, DHTEntry> loadedDHTEntries;
 	
 	//Semaphores to suspend the execution when a DHT Content is looked for. These calls to the P2PLayer
 	//are handle in a new Thread because FreePastry is implemented by this way
@@ -68,18 +71,19 @@ public class Core implements CoreObserver {
 	/**
 	 * Core constructor
 	 * @param p2pLayer
+	 * @param privateProfile
 	 */
 	public Core(P2PLayer p2pLayer, PrivateProfile privateProfile){
 		this.loadedBills = new HashMap<String, Bill>();
-		
 		this.notificationsReceived = new HashMap<String, Notification>();
-		
+		this.loadedDHTEntries = new HashMap<Id, DHTEntry>();
 		this.billsToload = privateProfile.getTransactionsDHTHashes().size();
 		this.loadBillTrials = 0;
-
 		this.privateProfile = privateProfile;
-		
 		this.p2pLayer = p2pLayer;
+		this.entryValidator = new EntryValidator();	
+		this.loadPublicProfileSemaphore = new Semaphore(0);
+		this.loadTransactionsSemaphore = new Semaphore(0);
 		this.p2pLayer.addObserver(this);
 		
 		try {
@@ -88,11 +92,6 @@ public class Core implements CoreObserver {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		this.entryValidator = new EntryValidator();	
-		
-		this.loadPublicProfileSemaphore = new Semaphore(0);
-		this.loadTransactionsSemaphore = new Semaphore(0);
 	}
 	
 	/**
@@ -154,7 +153,7 @@ public class Core implements CoreObserver {
 	}
 	
 	/**
-	 * This method is called when a debitor of a payment start the payment
+	 * This method is called when a debtor of a payment start the payment
 	 * @param transRef
 	 * @param comment
 	 * @param degreeOfStisfaction
@@ -225,7 +224,6 @@ public class Core implements CoreObserver {
 		p2pLayer.put(debitorFBMEntryPE1, "debitorFBMEntryPE1", FileType.FBM_ENTRY);
 	}
 
-
 	/**
 	 * The creditor starts his corresponding payment phase with a reference to a notification received
 	 * @param notificationRef
@@ -260,89 +258,105 @@ public class Core implements CoreObserver {
 		}
 	}
 	
-	public void paymentProtocolCreditorPhase2(String transRef, String comment, int degreeOfSatisfaction){
+	public void paymentProtocolCreditorPhase2(String notificationRef, String comment, int degreeOfSatisfaction){
 		//TODO
 		
-		//Creditor loads from DHT the bill associated to the current payment
-		Bill bill = loadedBills.get(transRef);
-		
-		//The last accountLedgerEntry must be loaded from DHT to calculate the next parameters:
-		//ledgerEntryNum
-		//pre-balance
-		//self_previous_ledgerEntry_DHTHash
-		AccountLedgerEntry lastLedger = loadLastAccountLedgerEntry();
-		
-		//The last FAMEntry must be loaded from DHT to know the next parameters:
-		//FAMEntryNum
-		//self_previous_FAMEntry_DHTHash
-		FAMEntry lastFAM = loadLastFAMEntry();
-		
-		//The last FBMEntry must be loaded from DHT to know the next parameters:
-		//FBMEntryNum
-		//self_previous_FAMEntry_DHTHash
-		FBMEntry lastFBM = loadLastFBMEntry();
-		
-		//With bill information creates the next partial entries
-		//creditorLedgerPE1
-		AccountLedgerEntry creditorLedgerEntryPE1 = PastEntryFactory.createAccountLedgerEntryPE1(bill, 
-				lastLedger.getLedgerEntryNum(), lastLedger.getBalance(), lastLedger.getId(), 
-				lastFBM.getFBMEntryNum(), true, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
-		
-		//Common field to debitorFACReditorPE1 and creditorFBMEntryPE1
-		//This hash is directly calculated at this point because files in FreePastry are not mutable
-		Id self_ledgerEntry_DHTHash = Util.makeDHTHash(p2pLayer.getPastryIdFactory(), privateProfile.getUUID(), 
-				creditorLedgerEntryPE1.getLedgerEntryNum(), null, FileType.ACCOUNT_LEDGER_ENTRY, EntryType.FINAL_ENTRY);
-		
-		//debitorFACreditorPE1
-		FAMEntry debitorFACreditorPE1 = PastEntryFactory.createFAMEntryPE1(lastFAM.getFAMEntryNum(), 
-				lastFAM.getId(), self_ledgerEntry_DHTHash, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
-		
-		//creditorFBMPE1
-		FBMEntry creditorFBMEntryPE1 = PastEntryFactory.createFBMEntryPE1(lastFBM.getFBMEntryNum(), 
-				lastFBM.getId(), self_ledgerEntry_DHTHash, comment, degreeOfSatisfaction, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
-		
-		//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
-		
-		//TODO
-		//Tengo que poner el hash adecuado, y no el de las entradas parciales!!!!!!!
-		/*
-		//With the three files loaded previously the next partial entries are created
-		//debitorLedgerPE2
-		AccountLedgerEntry debitorLedgerEntryPE2 = 
-				PastEntryFactory.createAccountLedgerEntryPE2(debitorLedgerEntryPE1, 
-						creditorFBMEntryPE1.getId(), creditorLedgerEntryPE1.getId(), 
-						"Creditor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
-		
-		//creditorFADebitorPE2
-		FAMEntry creditorFADebitorPE2 = PastEntryFactory.createFAMEntryPE2(creditorFADebitorPE1, 
-				comment, degreeOfSatisfaction, creditorFBMEntryPE1.getId(), 
-				"creditor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
-		
-		
-		//debitorFBEntryPE2
-		FBMEntry debitorFBMEntryPE2 = PastEntryFactory.createFBMEntryPE2(debitorFBMEntryPE1, 
-				debitorFACreditorPE1.getId(), p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
-		
-		
-		//store the corresponding entries into DHT
-		storeFilesCreditorPaymentProtocolPhase2(creditorLedgerEntryPE1, debitorFACreditorPE1, creditorFBMEntryPE1,
-				debitorLedgerEntryPE2, creditorFADebitorPE2, debitorFBMEntryPE2);
-		
-		//Notify when p2pLayer notifies to this class the successful storage
-		//wait();
-		
-		//the hashes and ids of the entries are sent as NotificationPairs objects to the debitor
-		Notification notificationPhase2;
 		try {
-			notificationPhase2 = new NotificationPaymentPhase2(p2pLayer.getNode().getId(), transRef, 
+			NotificationPaymentPhase1 notificationPhase1 = (NotificationPaymentPhase1) messenger.getNotification(notificationRef);
+			
+			String transRef = notificationPhase1.getRef();
+			
+			//Creditor loads from DHT the bill associated to the current payment
+			Bill bill = loadedBills.get(transRef);
+			
+			//The last accountLedgerEntry must be loaded from DHT to calculate the next parameters:
+			//ledgerEntryNum
+			//pre-balance
+			//self_previous_ledgerEntry_DHTHash
+			AccountLedgerEntry lastLedger = loadLastAccountLedgerEntry();
+			
+			//The last FAMEntry must be loaded from DHT to know the next parameters:
+			//FAMEntryNum
+			//self_previous_FAMEntry_DHTHash
+			FAMEntry lastFAM = loadLastFAMEntry();
+			
+			//The last FBMEntry must be loaded from DHT to know the next parameters:
+			//FBMEntryNum
+			//self_previous_FAMEntry_DHTHash
+			FBMEntry lastFBM = loadLastFBMEntry();
+			
+			//With bill information creates the next partial entries
+			//creditorLedgerPE1
+			AccountLedgerEntry creditorLedgerEntryPE1 = PastEntryFactory.createAccountLedgerEntryPE1(bill, 
+					lastLedger.getLedgerEntryNum(), lastLedger.getBalance(), lastLedger.getId(), 
+					lastFBM.getFBMEntryNum(), true, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+			
+			//Common field to debitorFACReditorPE1 and creditorFBMEntryPE1
+			//This hash is directly calculated at this point because files in FreePastry are not mutable
+			Id self_ledgerEntry_DHTHash = Util.makeDHTHash(p2pLayer.getPastryIdFactory(), privateProfile.getUUID(), 
+					creditorLedgerEntryPE1.getLedgerEntryNum(), null, FileType.ACCOUNT_LEDGER_ENTRY, EntryType.FINAL_ENTRY);
+			
+			//debitorFACreditorPE1
+			FAMEntry debitorFACreditorPE1 = PastEntryFactory.createFAMEntryPE1(lastFAM.getFAMEntryNum(), 
+					lastFAM.getId(), self_ledgerEntry_DHTHash, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+			
+			//creditorFBMPE1
+			FBMEntry creditorFBMEntryPE1 = PastEntryFactory.createFBMEntryPE1(lastFBM.getFBMEntryNum(), 
+					lastFBM.getId(), self_ledgerEntry_DHTHash, comment, degreeOfSatisfaction, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+			
+			//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
+			
+			//TODO
+			//Tengo que poner el hash adecuado, y no el de las entradas parciales!!!!!!!
+			
+			//With the three files loaded previously the next partial entries are created
+			//debitorLedgerPE2
+			AccountLedgerEntry debitorLedgerEntryPE1 = (AccountLedgerEntry) loadedDHTEntries.get(notificationPhase1.getDebitorLedgerPE1Hash());
+			AccountLedgerEntry debitorLedgerEntryPE2 = 
+					PastEntryFactory.createAccountLedgerEntryPE2(debitorLedgerEntryPE1, 
+							creditorFBMEntryPE1.getId(), creditorLedgerEntryPE1.getId(), 
+							"Creditor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+			
+			//creditorFADebitorPE2
+			FAMEntry creditorFADebitorPE1 = (FAMEntry) loadedDHTEntries.get(notificationPhase1.getCreditorFADebitorPE1Hash());
+			FAMEntry creditorFADebitorPE2 = PastEntryFactory.createFAMEntryPE2(creditorFADebitorPE1, 
+					comment, degreeOfSatisfaction, creditorFBMEntryPE1.getId(), 
+					"creditor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+			
+			
+			//debitorFBEntryPE2
+			FBMEntry debitorFBMEntryPE1 = (FBMEntry) loadedDHTEntries.get(notificationPhase1.getDebitorFBMPE1Hash());
+			FBMEntry debitorFBMEntryPE2 = PastEntryFactory.createFBMEntryPE2(debitorFBMEntryPE1, 
+					debitorFACreditorPE1.getId(), p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+			
+			//Now we can remove the three previous partial entries and the notification of phase 1
+			loadedDHTEntries.remove(notificationPhase1.getDebitorLedgerPE1Hash());
+			loadedDHTEntries.remove(notificationPhase1.getCreditorFADebitorPE1Hash());
+			loadedDHTEntries.remove(notificationPhase1.getDebitorFBMPE1Hash());
+			notificationsReceived.remove(notificationPhase1);
+			
+			//store the corresponding entries into DHT
+			storeFilesCreditorPaymentProtocolPhase2(creditorLedgerEntryPE1, debitorFACreditorPE1, creditorFBMEntryPE1,
+					debitorLedgerEntryPE2, creditorFADebitorPE2, debitorFBMEntryPE2);
+			
+			//Notify when p2pLayer notifies to this class the successful storage
+			//wait();
+			
+			//the hashes and ids of the entries are sent as NotificationPairs objects to the debtor
+			Notification notificationPhase2 = new NotificationPaymentPhase2(p2pLayer.getNode().getId(), transRef, 
 					creditorLedgerEntryPE1.getId(), debitorFACreditorPE1.getId(), creditorFBMEntryPE1.getId(),
 					debitorLedgerEntryPE2.getId(), creditorFADebitorPE2.getId(), debitorFBMEntryPE2.getId());
-		
+			
 			messenger.sendNotification(null, notificationPhase2);
-		} catch (NodeNotInitializedException e) {
+			
+		} catch (NonExistingNotificationException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
-		}*/
+		}
+		catch (NodeNotInitializedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private void storeFilesCreditorPaymentProtocolPhase2(AccountLedgerEntry creditorLedgerEntryPE1,
