@@ -207,8 +207,8 @@ public class PastEntryFactory {
 	 * @param self_digitalSignature
 	 * @return accountLedgerEntry
 	 */
-	public static AccountLedgerEntry createFinalAccountLedgerEntry(AccountLedgerEntry ledgerEntryPE2, Id DHTHash, String self_digitalSignature){
+	public static AccountLedgerEntry createFinalAccountLedgerEntry(AccountLedgerEntry ledgerEntryPE2, Id hash, String self_digitalSignature){
 		//The hash is not calculated here because it was calculated previously
-		return new AccountLedgerEntry(DHTHash, ledgerEntryPE2, new Timestamp(System.currentTimeMillis()), self_digitalSignature);
+		return new AccountLedgerEntry(hash, ledgerEntryPE2, new Timestamp(System.currentTimeMillis()), self_digitalSignature);
 	}
 }

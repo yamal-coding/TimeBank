@@ -51,7 +51,7 @@ public class Demo {
 	public static void main(String[] args){
 		Demo d = new Demo();
 		try {
-			d.runDemo(9003, "192.168.1.37", 9003);
+			d.runDemo(9003, "192.168.1.44", 9003);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -91,8 +91,8 @@ public class Demo {
 		
 		
 		//Console gui
-		TerminalGUI creditorConsoleGUI = new TerminalGUI(creditorController, 9004, "192.168.1.37", 9003);
-		TerminalGUI debitorConsoleGUI = new TerminalGUI(debitorController, 9005, "192.168.1.37", 9003);
+		TerminalGUI creditorConsoleGUI = new TerminalGUI(creditorController, 9004, "192.168.1.44", 9003);
+		TerminalGUI debitorConsoleGUI = new TerminalGUI(debitorController, 9005, "192.168.1.44", 9003);
 		
 		//System.exit(0);
 		
