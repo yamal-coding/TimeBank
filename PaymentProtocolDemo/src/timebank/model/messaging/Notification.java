@@ -12,7 +12,8 @@ import rice.p2p.commonapi.Message;
  *
  */
 public abstract class Notification implements Message {
-	private String ref; //reference to this pair
+	protected String ref; //reference to this notification
+	protected Id from;
 	
 	/**
 	 * Constructor
@@ -21,6 +22,7 @@ public abstract class Notification implements Message {
 	 */
 	public Notification(Id from) {
 		super();
+		this.from = from;
 		//The reference of this notification has to be unique so it is formed by a concatenation of the id
 		//of sender and a timestamp
 		this.ref = (new Timestamp(System.currentTimeMillis())).toString() + from.toString();
@@ -32,6 +34,14 @@ public abstract class Notification implements Message {
 	 */
 	public String getRef(){
 		return ref;
+	}
+	
+	/**
+	 * Returns the Id of the message originator
+	 * @return
+	 */
+	public Id getFrom(){
+		return from;
 	}
 	
 	/**
