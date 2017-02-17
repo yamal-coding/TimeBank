@@ -172,7 +172,7 @@ public class P2PLayer {
 	}
 	
 	/**
-	 * Methd called to get some content from the DHT
+	 * Method called to get some content from the DHT
 	 * @param key
 	 * @param contentID
 	 * @param fileType

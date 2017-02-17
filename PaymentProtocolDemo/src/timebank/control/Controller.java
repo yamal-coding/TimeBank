@@ -19,7 +19,11 @@ public class Controller {
 		core.addObserver(obs);
 	}
 	
+	public void viewPublicProfile(){
+		core.viewPublicProfile();
+	}
 	
+	/*
 	public void startPaymentProtocolPhase1(){
 		
 	}
@@ -34,5 +38,5 @@ public class Controller {
 	
 	public void startPaymentProtocolPhase4(){
 		
-	}
+	}*/
 }

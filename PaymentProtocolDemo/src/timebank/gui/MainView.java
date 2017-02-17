@@ -190,7 +190,7 @@ public class MainView extends JFrame implements GUIObserver{
 	}
 
 	@Override
-	public void onPublicProfileLoaded(String name, String surname) {
+	public void onViewPublicProfile(String name, String surname) {
 		logTextPane.setText(logTextPane.getText() + "Public profile loaded succesfully.\n");
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
@@ -217,6 +217,18 @@ public class MainView extends JFrame implements GUIObserver{
 				logTextPane.setText(logTextPane.getText() + "Public profile falied load.\n");
 			}
 		});
+	}
+
+	@Override
+	public void onFailedNotificationLoad() {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onSuccesfulConnection() {
+		// TODO Auto-generated method stub
+		
 	}
 
 }

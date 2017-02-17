@@ -29,11 +29,11 @@ import timebank.model.util.Util;
 /**
  * This class will do the necessary operations to test and simulate the payment protocol
  * 
- * Two FreePastry nodes will be created and joined to the network (a Creditor and a Debitor). 
+ * Two FreePastry nodes will be created and joined to the network (a Creditor and a Debtor). 
  * A PublicProfile will be created and stored into the DHT for each node (each user).
  * A fictitious Bill will be created and stored into the DHT with information from previous PublicProfiles.
  * A GUI will be launched per each node, simulating two open user sessions.
- * Debitor GUI: Initially "initiate payment" option will be available.
+ * Debtor GUI: Initially "initiate payment" option will be available.
  * Creditor GUI: Initially there are not any available options.
  * At this moment the payment protocol can be started.
  *  
@@ -51,7 +51,7 @@ public class Demo {
 	public static void main(String[] args){
 		Demo d = new Demo();
 		try {
-			d.runDemo(9003, "192.168.1.44", 9003);
+			d.runDemo(9003, "192.168.1.39", 9003);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -90,9 +90,17 @@ public class Demo {
 		Controller creditorController = new Controller(creditorCore);
 		
 		
-		//Console gui
-		TerminalGUI creditorConsoleGUI = new TerminalGUI(creditorController, 9004, "192.168.1.44", 9003);
-		TerminalGUI debitorConsoleGUI = new TerminalGUI(debitorController, 9005, "192.168.1.44", 9003);
+		//Console GUI
+		TerminalGUI creditorConsoleGUI = new TerminalGUI(creditorController, "CREDITOR");
+		TerminalGUI debitorConsoleGUI = new TerminalGUI(debitorController, "DEBTOR");
+		
+		try {
+			creditorConsoleGUI.run(9004, "192.168.1.39", 9003);
+			debitorConsoleGUI.run(9005, "192.168.1.39", 9003);
+		} catch (InterruptedException e) {
+			
+			e.printStackTrace();
+		}
 		
 		//System.exit(0);
 		

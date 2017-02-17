@@ -93,7 +93,7 @@ public class P2PUtil {
 	 * @throws IOException
 	 */
 	public static void connectNode(PastryNode node, InetSocketAddress bootInetSocketAddress) throws IOException {
-		//We conect our pastry node with the boot address
+		//We connect our pastry node with the boot address
 		node.boot(bootInetSocketAddress);
 		
 		//Several attempts are made to connect the node to the network
