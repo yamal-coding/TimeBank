@@ -26,7 +26,7 @@ import java.awt.FlowLayout;
 import javax.swing.JButton;
 import javax.swing.JList;
 
-public class MainView extends JFrame implements GUIObserver{
+public class MainView extends JFrame implements ActionListener, GUIObserver{
 
 	private JTextPane logTextPane;
 	private JLabel nameLabel;
@@ -37,6 +37,9 @@ public class MainView extends JFrame implements GUIObserver{
 	
 	private DefaultListModel<String> notificationsListModel;
 	private JList<String> notificationsList;
+	
+	private JButton viewTransaction;
+	private JButton viewNotification;
 	
 	private Controller c;
 
@@ -116,6 +119,9 @@ public class MainView extends JFrame implements GUIObserver{
 		transactionsScrollPane.setViewportView(transactionsList);
 		paymentsSubpanel.add(transactionsScrollPane);
 		
+		viewTransaction = new JButton("View");
+		paymentsPanel.add(viewTransaction);
+		
 		JPanel notificationsPanel = new JPanel();
 		panel.add(notificationsPanel);
 		GridBagLayout gbl_notificationsPanel = new GridBagLayout();
@@ -138,6 +144,9 @@ public class MainView extends JFrame implements GUIObserver{
 		gbc_notificationsSubpanel.gridx = 0;
 		gbc_notificationsSubpanel.gridy = 1;
 		notificationsPanel.add(notificationsSubpanel, gbc_notificationsSubpanel);
+		
+		viewNotification = new JButton("View");
+		notificationsPanel.add(viewNotification);
 		
 		notificationsListModel = new DefaultListModel<String>();
 		notificationsList = new JList<String>(notificationsListModel);
@@ -190,6 +199,15 @@ public class MainView extends JFrame implements GUIObserver{
 	}
 
 	@Override
+	public void onViewTransaction(String ref, double hours) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				new ViewTransaction(c, ref, hours);
+			}
+		});
+	}
+	
+	@Override
 	public void onViewPublicProfile(String name, String surname) {
 		logTextPane.setText(logTextPane.getText() + "Public profile loaded succesfully.\n");
 		SwingUtilities.invokeLater(new Runnable() {
@@ -227,6 +245,15 @@ public class MainView extends JFrame implements GUIObserver{
 
 	@Override
 	public void onSuccesfulConnection() {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				logTextPane.setText(logTextPane.getText() + "Succesful connection.\n");
+			}
+		});
+	}
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
 		// TODO Auto-generated method stub
 		
 	}

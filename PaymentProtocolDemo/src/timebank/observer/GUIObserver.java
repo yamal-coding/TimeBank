@@ -13,6 +13,8 @@ public interface GUIObserver {
 	
 	public void onViewPublicProfile(String name, String surname);
 	
+	public void onViewTransaction(String ref, double hours);
+	
 	public void onTransactionLoaded(String transref);
 	
 	public void onFailedPublicProfileLoad();

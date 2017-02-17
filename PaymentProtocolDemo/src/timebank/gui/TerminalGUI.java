@@ -29,13 +29,12 @@ public class TerminalGUI implements GUIObserver {
 	}
 	
 	public synchronized void run(int bindport, String bootAddress, int bootport) throws InterruptedException{
-		boolean exit = false;
-		
 		this.c.connect(bindport, bootAddress, bootport);
 		
-		wait();
+		//wait();
 		
 		if (connectionSuccesful){
+			boolean exit = false;
 			while (!exit){
 				println("Notifications:");
 				for (String notf : notifications)
@@ -63,7 +62,7 @@ public class TerminalGUI implements GUIObserver {
 		else
 			System.err.println("Error de conexión");
 		
-		System.exit(0);
+		//System.exit(0);
 	}
 	
 	private void selectNotification(){
@@ -148,6 +147,7 @@ public class TerminalGUI implements GUIObserver {
 	
 	@Override
 	public synchronized void onTransactionLoaded(String transref){
+		transactions.add(transref);
 		println("Loaded transaction: " + transref);
 		
 	}
@@ -161,5 +161,11 @@ public class TerminalGUI implements GUIObserver {
 	public synchronized void onFailedNotificationLoad() {
 		println(this.outputPrefix + "Error al cargar la información asociada a la notificación.");
 		println(this.outputPrefix + "Asegúrese de que ha elegido una notificación existente.");
+	}
+
+	@Override
+	public void onViewTransaction(String ref, double hours) {
+		// TODO Auto-generated method stub
+		
 	}
 }

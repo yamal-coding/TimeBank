@@ -96,6 +96,11 @@ public class Core implements CoreObserver {
 		this.guiObserver = obs;
 	}
 	
+	public void viewTransaction(String ref){
+		Bill bill = loadedBills.get(ref);
+		guiObserver.onViewTransaction(ref, bill.getActualServiceHours());
+	}
+	
 	public void viewPublicProfile(){
 		//TODO Hay que comprobar primero que el nodo esta conectado para no enviar un publicProfile nulo
 		//y notificar en caso de error
@@ -148,9 +153,15 @@ public class Core implements CoreObserver {
 						//when the last bill is loaded from DHT
 						loadTransactionsSemaphore.acquire();
 						
-						for (Map.Entry<String, Bill> entry : loadedBills.entrySet())
-							guiObserver.onTransactionLoaded(entry.getValue().getSelf_transRef());
+						for (Map.Entry<String, Bill> entry : loadedBills.entrySet()){
+							if (entry.getValue().getSelf_profile_DHTHash().equals(publicProfile.getId()))
+								guiObserver.onTransactionLoaded(entry.getValue().getSelf_transRef());
+							else
+								guiObserver.onTransactionLoaded(entry.getValue().getOther_transRef());
+						}
 					}
+					
+					guiObserver.onSuccesfulConnection();
 				} catch (InterruptedException e) {
 					guiObserver.failedConnection();
 				}
@@ -619,9 +630,9 @@ public class Core implements CoreObserver {
 	 * Method called when a notification is received from another node
 	 */
 	@Override
-	public synchronized void onReceiveNotification(Notification notificationPair) {
-		//notificationsReceived.put(notificationPair.getRef(), notificationPair);
-		guiObserver.onReceiveNotification("");
+	public synchronized void onReceiveNotification(Notification notification) {
+		//notificationsReceived.put(notification.getRef(), notification);
+		guiObserver.onReceiveNotification(notification.getRef());
 	}
 
 	/**
@@ -761,7 +772,7 @@ public class Core implements CoreObserver {
 		else{
 			try{
 				this.publicProfile = (PublicProfile) publicProfile;
-				//guiObserver.onPublicProfileLoaded(this.publicProfile.getSelf_firstName(), this.publicProfile.getSelf_surnames());
+				guiObserver.onViewPublicProfile(this.publicProfile.getSelf_firstName(), this.publicProfile.getSelf_surnames());
 			}
 			catch (ClassCastException e) {
 				guiObserver.onFailedPublicProfileLoad();

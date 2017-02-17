@@ -23,6 +23,10 @@ public class Controller {
 		core.viewPublicProfile();
 	}
 	
+	public void viewTransaction(String ref){
+		core.viewTransaction(ref);
+	}
+	
 	/*
 	public void startPaymentProtocolPhase1(){
 		

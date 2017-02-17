@@ -91,24 +91,49 @@ public class Demo {
 		
 		
 		//Console GUI
-		TerminalGUI creditorConsoleGUI = new TerminalGUI(creditorController, "CREDITOR");
+		/*TerminalGUI creditorConsoleGUI = new TerminalGUI(creditorController, "CREDITOR");
 		TerminalGUI debitorConsoleGUI = new TerminalGUI(debitorController, "DEBTOR");
 		
-		try {
-			creditorConsoleGUI.run(9004, "192.168.1.39", 9003);
-			debitorConsoleGUI.run(9005, "192.168.1.39", 9003);
-		} catch (InterruptedException e) {
-			
-			e.printStackTrace();
-		}
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					debitorConsoleGUI.run(9005, "192.168.1.39", 9003);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}).start();
+		
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					creditorConsoleGUI.run(9004, "192.168.1.39", 9003);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}).start();*/
 		
 		//System.exit(0);
 		
 		
 		//Graphic GUI
-		//MainView debitorGraphicGUI = new MainView(debitorController, 9005, "192.168.1.37", 9003);
-		//MainView creditorGraphicGUI = new MainView(creditorController, 9004, "192.168.1.37", 9003);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				new MainView(debitorController, 9005, "192.168.1.39", 9003);
+			}
+		}).start();
 		
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				new MainView(creditorController, 9004, "192.168.1.39", 9003);
+			}
+		}).start();
 	}
 	
 	/**
