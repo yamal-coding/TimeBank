@@ -148,17 +148,19 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		gbc_notificationsSubpanel.gridy = 1;
 		notificationsPanel.add(notificationsSubpanel, gbc_notificationsSubpanel);
 		
+		notificationsListModel = new DefaultListModel<String>();
+		notificationsList = new JList<String>(notificationsListModel);
+		JScrollPane notificationsScrollPane = new JScrollPane();
+		notificationsScrollPane.setViewportView(notificationsList);
+		notificationsListModel.addElement("Prueba");
+		notificationsSubpanel.add(notificationsScrollPane);
+		
+		
 		viewNotification = new JButton("View");
 		viewNotification.setActionCommand("viewNotification");
 		viewNotification.setName("viewNotification");
 		viewNotification.addActionListener(this);
 		notificationsPanel.add(viewNotification);
-		
-		notificationsListModel = new DefaultListModel<String>();
-		notificationsList = new JList<String>(notificationsListModel);
-		JScrollPane notificationsScrollPane = new JScrollPane();
-		notificationsScrollPane.setViewportView(notificationsList);
-		paymentsSubpanel.add(transactionsScrollPane);
 		
 		this.setVisible(true);
 	}
@@ -201,7 +203,7 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 			public void run(){
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run(){
-						logTextPane.setText(logTextPane.getText() + "Notification received.\n");
+						logTextPane.setText(logTextPane.getText() + "New notification received: " + notification + "\n");
 						notificationsListModel.addElement(notification);
 					}
 				});
@@ -268,6 +270,16 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				logTextPane.setText(logTextPane.getText() + "Succesful connection.\n");
+			}
+		});
+	}
+
+
+	@Override
+	public void onLogMessage(String msg) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				logTextPane.setText(logTextPane.getText() + msg + "\n");
 			}
 		});
 	}

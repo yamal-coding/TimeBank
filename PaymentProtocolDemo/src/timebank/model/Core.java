@@ -5,7 +5,9 @@ import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 import rice.p2p.commonapi.Id;
+import rice.p2p.commonapi.NodeHandle;
 import rice.p2p.past.PastContent;
+import rice.pastry.leafset.LeafSet;
 import timebank.factory.PastEntryFactory;
 import timebank.model.exception.NodeNotInitializedException;
 import timebank.model.exception.NonExistingNotificationException;
@@ -78,6 +80,9 @@ public class Core implements CoreObserver {
 	//are handle in a new Thread because FreePastry is implemented by this way
 	private Semaphore loadPublicProfileSemaphore;
 	private Semaphore loadTransactionsSemaphore;
+	private Semaphore loadAccountLedgerSemaphore;
+	private Semaphore loadFAMSemaphore;
+	private Semaphore loadFBMSemaphore;
 	
 	/**
 	 * Core constructor
@@ -98,6 +103,9 @@ public class Core implements CoreObserver {
 		this.entryValidator = new EntryValidator();	
 		this.loadPublicProfileSemaphore = new Semaphore(0);
 		this.loadTransactionsSemaphore = new Semaphore(0);
+		this.loadAccountLedgerSemaphore = new Semaphore(0);
+		this.loadFAMSemaphore = new Semaphore(0);
+		this.loadFBMSemaphore = new Semaphore(0);
 		this.p2pLayer.addObserver(this);
 	}
 	
@@ -125,13 +133,23 @@ public class Core implements CoreObserver {
 			guiObserver.onViewPublicProfile(publicProfile.getSelf_firstName(), publicProfile.getSelf_surnames());
 	}
 	
+	public void handleNotification(String ref){
+		try {
+			Notification not = messenger.getNotification(ref);
+			
+		} catch (NonExistingNotificationException e) {
+			// TODO Auto-generated catch block
+			
+		}
+	}
+	
 	/**
 	 * Method used to connect a node to the FreePastry network
 	 * @param bindport
 	 * @param bootAddress
 	 * @param bootport
 	 */
-	public synchronized void connect(int bindport, String bootAddress, int bootport){
+	public void connect(int bindport, String bootAddress, int bootport){
 		switch(p2pLayer.join(bindport, bootAddress, bootport, this)){
 			case NODE_ALREADY_CONNECTED:
 				guiObserver.onNodeAlreadyConnected();
@@ -191,7 +209,7 @@ public class Core implements CoreObserver {
 	 * @param comment
 	 * @param degreeOfStisfaction
 	 */
-	public synchronized void paymentProtocolDebtorPhase1(String transRef, String comment, int degreeOfStisfaction){
+	public void paymentProtocolDebtorPhase1(String transRef, String comment, int degreeOfStisfaction){
 		//With the transaction reference given, the corresponding bill is loaded
 		Bill bill = loadedBills.get(transRef);
 		
@@ -200,40 +218,23 @@ public class Core implements CoreObserver {
 		//pre-balance
 		//self_previous_ledgerEntry_DHTHash
 		loadLastAccountLedgerEntry();
-		//si es nulo deberian crearse parametros iniciales para el nuevo AccountLedger que se creara, que sera el primero
-		if (lastLedger == null){
-			//TODO
-			//Crear parametros iniciales
-		}
-		
-		
 		
 		//The last FAMEntry must be loaded from DHT to know the next parameters:
 		//FAMEntryNum
 		//self_previous_FAMEntry_DHTHash
 		loadLastFAMEntry();
-		//si es nulo deberian crearse parametros iniciales para el nuevo FAM que se creara, que sera el primero
-		if (lastFAM == null){
-			//TODO
-			//Crear parametros iniciales
-		}
 		
 		//The last FBMEntry must be loaded from DHT to know the next parameters:
 		//FBMEntryNum
 		//self_previous_FAMEntry_DHTHash
 		loadLastFBMEntry();
-		//si es nulo deberian crearse parametros iniciales para el nuevo FAM que se creara, que sera el primero
-		if (lastFBM == null){
-			//TODO
-			//Crear parametros iniciales
-		}
 		
 		//With the bill information the next partial entries are created
 		
 		//debitorLedgerEntryPE1
 		AccountLedgerEntry debitorLedgerEntryPE1 = PastEntryFactory.createAccountLedgerEntryPE1(bill, 
-				lastLedger.getLedgerEntryNum(), lastLedger.getBalance(), lastLedger.getId(), 
-				lastFBM.getFBMEntryNum(), false, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+				(lastLedger == null) ? 1 : lastLedger.getLedgerEntryNum(), (lastLedger == null) ? 0 : lastLedger.getBalance(), (lastLedger == null) ? null : lastLedger.getId(), 
+				(lastFBM == null) ? 1 : lastFBM.getFBMEntryNum(), false, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 		
 		//Common field to creditorFADebitorPE1 and debitorFBMEntryPE1
 		//This hash is directly calculated at this point because files in FreePastry are not mutable
@@ -241,12 +242,12 @@ public class Core implements CoreObserver {
 				debitorLedgerEntryPE1.getLedgerEntryNum(), null, FileType.ACCOUNT_LEDGER_ENTRY, EntryType.FINAL_ENTRY);
 				
 		//creditorFADebitorPE1
-		FAMEntry creditorFADebitorPE1 = PastEntryFactory.createFAMEntryPE1(lastFAM.getFAMEntryNum(), 
-				lastFAM.getId(), self_ledgerEntry_DHTHash, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+		FAMEntry creditorFADebitorPE1 = PastEntryFactory.createFAMEntryPE1((lastFAM == null) ? 1 : lastFAM.getFAMEntryNum(), 
+				(lastFAM == null) ? null : lastFAM.getId(), self_ledgerEntry_DHTHash, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 		
 		//debitorFBMEntryPE1
-		FBMEntry debitorFBMEntryPE1 = PastEntryFactory.createFBMEntryPE1(lastFBM.getFBMEntryNum(), 
-				lastFBM.getId(), self_ledgerEntry_DHTHash, comment, degreeOfStisfaction, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+		FBMEntry debitorFBMEntryPE1 = PastEntryFactory.createFBMEntryPE1((lastFBM == null) ? 1 : lastFBM.getFBMEntryNum(), 
+				(lastFBM == null) ? null : lastFBM.getId(), self_ledgerEntry_DHTHash, comment, degreeOfStisfaction, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 		
 		//store the corresponding entries into DHT
 		storeFilesDebitorPaymentProtocolPhase1(debitorLedgerEntryPE1, creditorFADebitorPE1, debitorFBMEntryPE1);
@@ -257,12 +258,29 @@ public class Core implements CoreObserver {
 		try {
 			Notification notificationPhase1 = new NotificationPaymentPhase1(p2pLayer.getNode().getId(), transRef,
 					debitorLedgerEntryPE1.getId(), creditorFADebitorPE1.getId(), debitorFBMEntryPE1.getId());
-			messenger.sendNotification(null, notificationPhase1);
+			
+			LeafSet leafSet = p2pLayer.getNode().getLeafSet();
+			
+			
+			for (int i = 0; i <= leafSet.ccwSize(); i++){
+			      if (i != 0) { //Para no enviarse el mensaje a si mismo
+			    	//Recuperamos el NodeHandler del nodo vecino i. Contiene informacion del nodo.
+			        NodeHandle nh = leafSet.get(i);
+			        
+			        messenger.sendNotification(nh, notificationPhase1);
+			        
+			        try {
+						Thread.sleep(400);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+			      }
+			    }
 		} catch (NodeNotInitializedException e) {
 			// TODO
 			
 			//NOTIFY THE ERROR OF THE OPERATION
-		}*/
+		}
 	}
 
 	private void storeFilesDebitorPaymentProtocolPhase1(AccountLedgerEntry debitorLedgerEntryPE1,
@@ -335,8 +353,8 @@ public class Core implements CoreObserver {
 			//With bill information creates the next partial entries
 			//creditorLedgerPE1
 			AccountLedgerEntry creditorLedgerEntryPE1 = PastEntryFactory.createAccountLedgerEntryPE1(bill, 
-					lastLedger.getLedgerEntryNum(), lastLedger.getBalance(), lastLedger.getId(), 
-					lastFBM.getFBMEntryNum(), true, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+					(lastLedger == null) ? 1 : lastLedger.getLedgerEntryNum(), (lastLedger == null) ? 0 : lastLedger.getBalance(), (lastLedger == null) ? null :lastLedger.getId(), 
+					(lastFBM == null) ? 1 :lastFBM.getFBMEntryNum(), true, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 			
 			//Common field to debitorFACReditorPE1 and creditorFBMEntryPE1
 			//This hash is directly calculated at this point because files in FreePastry are not mutable
@@ -344,12 +362,12 @@ public class Core implements CoreObserver {
 					creditorLedgerEntryPE1.getLedgerEntryNum(), null, FileType.ACCOUNT_LEDGER_ENTRY, EntryType.FINAL_ENTRY);
 			
 			//debitorFACreditorPE1
-			FAMEntry debitorFACreditorPE1 = PastEntryFactory.createFAMEntryPE1(lastFAM.getFAMEntryNum(), 
-					lastFAM.getId(), creditor_ledgerEntry_DHTHash, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+			FAMEntry debitorFACreditorPE1 = PastEntryFactory.createFAMEntryPE1((lastFAM == null) ? 1 :lastFAM.getFAMEntryNum(), 
+					(lastFAM == null) ? null :lastFAM.getId(), creditor_ledgerEntry_DHTHash, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 			
 			//creditorFBMPE1
-			FBMEntry creditorFBMEntryPE1 = PastEntryFactory.createFBMEntryPE1(lastFBM.getFBMEntryNum(), 
-					lastFBM.getId(), creditor_ledgerEntry_DHTHash, comment, degreeOfSatisfaction, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+			FBMEntry creditorFBMEntryPE1 = PastEntryFactory.createFBMEntryPE1((lastFBM == null) ? 1 :lastFBM.getFBMEntryNum(), 
+					(lastFBM == null) ? null :lastFBM.getId(), creditor_ledgerEntry_DHTHash, comment, degreeOfSatisfaction, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 			
 			//With the three files loaded previously the next partial entries are created
 			//debitorLedgerPE2
@@ -599,13 +617,13 @@ public class Core implements CoreObserver {
 		p2pLayer.put(creditorFAM, "debitorFADebitorEntry", FileType.FAM_ENTRY);
 	}
 	
-	private synchronized void loadLastAccountLedgerEntry(){
+	private void loadLastAccountLedgerEntry(){
 		this.loadMoreLedger = true;
 		
 		p2pLayer.get(publicProfile.getSelf_first_LedgerEntryDHTHash(), "firstLedgerEntry", FileType.ACCOUNT_LEDGER_ENTRY);
 		
 		try {
-			wait();
+			loadAccountLedgerSemaphore.acquire();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -613,31 +631,29 @@ public class Core implements CoreObserver {
 	}
 
 	private void loadLastFAMEntry(){
-		this.loadMoreLedger = true;
+		this.loadMoreFAM = true;
 		
 		p2pLayer.get(publicProfile.getSelf_first_FAMEntryDHTHash(), "firstFAMEntry", FileType.FAM_ENTRY);
 		
 		try {
-			wait();
+			loadFAMSemaphore.acquire();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 	
-	private FBMEntry loadLastFBMEntry(){
+	private void loadLastFBMEntry(){
+		loadMoreFBM = true;
 		p2pLayer.get(publicProfile.getSelf_first_FBMEntryDHTHash(), "firstFBMEntry", FileType.FBM_ENTRY);
 		
 		try {
-			wait();
+			loadFBMSemaphore.acquire();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		return null;
 	}
-	
 	
 	/**
 	 * This method calls p2p layer to look up the user public profile in DHT
@@ -661,7 +677,7 @@ public class Core implements CoreObserver {
 	 * Method called when a notification is received from another node
 	 */
 	@Override
-	public synchronized void onReceiveNotification(Notification notification) {
+	public void onReceiveNotification(Notification notification) {
 		//notificationsReceived.put(notification.getRef(), notification);
 		guiObserver.onReceiveNotification(notification.getRef());
 	}
@@ -673,7 +689,11 @@ public class Core implements CoreObserver {
 	 * @param error
 	 */
 	@Override
-	public synchronized void onFinishedStorage(String msg, boolean error) {
+	public void onFinishedStorage(String msg, boolean error) {
+		guiObserver.onLogMessage(msg);
+		
+		//TODO
+		//tratar el error
 		if (error){//there has been errors during the "insert" call into the DHT
 			
 		}
@@ -690,7 +710,7 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public /*synchronized*/ void onLookupBill(PastContent bill, boolean error, String msg) {
+	public void onLookupBill(PastContent bill, boolean error, String msg) {
 		if (error){
 			//Handle error
 		}
@@ -726,11 +746,13 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public synchronized void onLookupAccountLedger(PastContent accountLedger, boolean error, String msg) {
+	public void onLookupAccountLedger(PastContent accountLedger, boolean error, String msg) {
+		guiObserver.onLogMessage(msg);
 		if (error || accountLedger == null){
 			//If an error occurred then it is supposed that there is no next ledger to load
-			loadMoreLedger = false;
-			notifyAll();
+			if (loadMoreLedger)
+				loadMoreLedger = false;
+			loadAccountLedgerSemaphore.release();
 		}
 		else{
 			try {
@@ -738,13 +760,11 @@ public class Core implements CoreObserver {
 				
 				if (loadMoreLedger){
 					int num = lastLedger.getLedgerEntryNum() + 1;
-					
 					p2pLayer.get(lastLedger.getSelf_next_ledgerEntry_DHTHash(), 
 							"AccountLedgerEntry " + num, FileType.ACCOUNT_LEDGER_ENTRY);
 				}
 				else
-					notifyAll();
-					
+					loadAccountLedgerSemaphore.release();
 			}
 			catch (ClassCastException e){
 				//Handle error
@@ -760,15 +780,22 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public synchronized void onLookupFAMEntry(PastContent famEntry, boolean error, String msg) {
-		if (error){
-			//Handle error
-
+	public void onLookupFAMEntry(PastContent famEntry, boolean error, String msg) {
+		guiObserver.onLogMessage(msg);
+		if (error || famEntry == null){
+			loadMoreFAM = false;
+			loadFAMSemaphore.release();
 		}
 		else{
 			try {
-				FAMEntry fam = (FAMEntry) famEntry;
-				//to do
+				lastFAM = (FAMEntry) famEntry;
+				
+				if (loadMoreFAM){
+					int num = lastFAM.getFAMEntryNum() + 1;
+					p2pLayer.get(lastFAM.getSelf_next_FAMEntry_DHTHash(), "FAMEntry " + num, FileType.FAM_ENTRY);
+				}
+				else
+					loadFAMSemaphore.release();
 			}
 			catch (ClassCastException e){
 				//Handle error
@@ -784,14 +811,22 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public synchronized void onLookupFBMEntry(PastContent fbmEntry, boolean error, String msg) {
-		if (error){
-			//Handle error
+	public void onLookupFBMEntry(PastContent fbmEntry, boolean error, String msg) {
+		guiObserver.onLogMessage(msg);
+		if (error || fbmEntry == null){
+			loadMoreFBM = false;
+			loadFBMSemaphore.release();
 		}
 		else{
 			try {
-				FBMEntry fbm = (FBMEntry) fbmEntry;
-				//to do
+				lastFBM = (FBMEntry) fbmEntry;
+				
+				if (loadMoreFBM){
+					int num = lastFBM.getFBMEntryNum() + 1;
+					p2pLayer.get(lastFBM.getSelf_next_FBMEntry_DHTHash(), "FBMEntry " + num, FileType.FBM_ENTRY);
+				}
+				else
+					loadFBMSemaphore.release();
 			}
 			catch (ClassCastException e){
 				//Handle error
@@ -807,9 +842,10 @@ public class Core implements CoreObserver {
 	 * @param msg
 	 */
 	@Override
-	public /*synchronized*/ void onLookupPublicProfile(PastContent publicProfile, boolean error, String msg) {
+	public void onLookupPublicProfile(PastContent publicProfile, boolean error, String msg) {
+		guiObserver.onLogMessage(msg);
 		if (error){
-			guiObserver.onFailedPublicProfileLoad();
+			//guiObserver.onFailedPublicProfileLoad();
 		}
 		else{
 			try{
@@ -817,7 +853,7 @@ public class Core implements CoreObserver {
 				guiObserver.onViewPublicProfile(this.publicProfile.getSelf_firstName(), this.publicProfile.getSelf_surnames());
 			}
 			catch (ClassCastException e) {
-				guiObserver.onFailedPublicProfileLoad();
+				//guiObserver.onFailedPublicProfileLoad();
 			}
 		}
 		

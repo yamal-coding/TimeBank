@@ -7,7 +7,7 @@ import java.util.Scanner;
 import timebank.control.Controller;
 import timebank.observer.GUIObserver;
 
-public class TerminalGUI implements GUIObserver {
+public abstract class TerminalGUI implements GUIObserver {
 	private Controller c;
 	private List<String> notifications;
 	private List<String> transactions;

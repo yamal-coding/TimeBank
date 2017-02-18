@@ -20,4 +20,6 @@ public interface GUIObserver {
 	public void onFailedPublicProfileLoad();
 	
 	public void onFailedNotificationLoad();
+	
+	public void onLogMessage(String msg);
 }
