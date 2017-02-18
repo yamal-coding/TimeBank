@@ -1,6 +1,7 @@
 package timebank.model.messaging;
 
 import rice.p2p.commonapi.Id;
+import timebank.observer.GUIObserver;
 
 public class NotificationPaymentPhase2 extends NotificationPayment {
 
@@ -29,6 +30,10 @@ public class NotificationPaymentPhase2 extends NotificationPayment {
 	@Override
 	public NotificationType getNotificationType() {
 		return NotificationType.CREDITOR_PAYMENT_PHASE2;
+	}
+	
+	public void handleNotification(GUIObserver observer){
+		
 	}
 	
 	public Id getCreditorLedgerPE1Hash() {

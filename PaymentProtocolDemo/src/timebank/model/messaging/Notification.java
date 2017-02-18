@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 
 import rice.p2p.commonapi.Id;
 import rice.p2p.commonapi.Message;
+import timebank.observer.GUIObserver;
 
 /**
  * Class that implements Message Interface. It represents a message between two FreePastry nodes
@@ -43,6 +44,8 @@ public abstract class Notification implements Message {
 	public Id getFrom(){
 		return from;
 	}
+	
+	public abstract void handleNotification(GUIObserver observer);
 	
 	/**
 	 * Returns the type of the notification. This method is implemented by each notification type

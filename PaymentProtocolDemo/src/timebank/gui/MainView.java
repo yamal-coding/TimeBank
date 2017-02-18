@@ -284,4 +284,17 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		});
 	}
 
+	@Override
+	public void onNewlyStartedPayment(String notRef, String transRef, String name) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				//Las cosas que se preguntaran aqui son si el Creditor desea validar ahora o no
+				//los ficheros parciales de la primera fase del pago creados por el Debtor asociados
+				//a la notificacion recibida
+				
+				
+			}
+		});
+	}
+
 }

@@ -136,7 +136,7 @@ public class Core implements CoreObserver {
 	public void handleNotification(String ref){
 		try {
 			Notification not = messenger.getNotification(ref);
-			
+			not.handleNotification(guiObserver);
 		} catch (NonExistingNotificationException e) {
 			// TODO Auto-generated catch block
 			

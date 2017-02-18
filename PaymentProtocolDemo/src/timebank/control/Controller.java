@@ -36,6 +36,10 @@ public class Controller {
 		
 	}
 	
+	public void creditorPaymentPhase1(){
+		
+	}
+	
 	/*
 	public void startPaymentProtocolPhase1(){
 		

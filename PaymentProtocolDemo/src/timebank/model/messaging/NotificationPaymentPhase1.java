@@ -1,6 +1,7 @@
 package timebank.model.messaging;
 
 import rice.p2p.commonapi.Id;
+import timebank.observer.GUIObserver;
 
 public class NotificationPaymentPhase1 extends NotificationPayment {
 	
@@ -19,6 +20,12 @@ public class NotificationPaymentPhase1 extends NotificationPayment {
 	@Override
 	public NotificationType getNotificationType(){
 		return NotificationType.DEBITOR_PAYMENT_PHASE1;
+	}
+	
+	public void handleNotification(GUIObserver observer){
+		//Esta notificacion se recibe en la primera fase del pago siendo un Creditor,
+		//por lo que hay que decir en la vista que el debitor X ha iniciado el pago y preguntar
+		//si el Creditor desea proceder con la siguiente fase del pago
 	}
 
 	public Id getDebitorLedgerPE1Hash() {

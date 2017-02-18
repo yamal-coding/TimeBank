@@ -34,6 +34,7 @@ public class FeedbackInput extends JDialog implements ActionListener {
 	
 	private Controller c;
 	private String ref;
+	private boolean isCreditor;
 	
 	private enum Degree {
 		NONE("0", 0), ONE("1", 1), TWO("2", 2), THREE("3", 3), FOUR("4", 4), FIVE("5", 5);
@@ -56,9 +57,10 @@ public class FeedbackInput extends JDialog implements ActionListener {
 	}
 	
 
-	public FeedbackInput(Controller c, String ref){
+	public FeedbackInput(Controller c, String ref, boolean isCreditor){
 		this.c = c;
 		this.ref = ref;
+		this.isCreditor = isCreditor;
 		
 		initGUI();
 	}
@@ -134,7 +136,11 @@ public class FeedbackInput extends JDialog implements ActionListener {
 				String feedback = textPane.getText();
 				int degree = selectedDegree.getIndex();
 				
-				c.debitorPaymentPhase1(ref, feedback, degree);
+				if (isCreditor){
+					
+				}
+				else
+					c.debitorPaymentPhase1(ref, feedback, degree);
 			}
 		}
 		else if (action.equals(cancelActionCommand))

@@ -1,10 +1,11 @@
 package timebank.model.messaging;
 
 import rice.p2p.commonapi.Id;
+import timebank.observer.GUIObserver;
 
 public abstract class NotificationPayment extends Notification {
 	//Reference of the transaction associated to the current payment
-	String transRef;
+	protected String transRef;
 	
 	public NotificationPayment(Id from, String transRef) {
 		super(from);
@@ -19,5 +20,7 @@ public abstract class NotificationPayment extends Notification {
 		return transRef;
 	}
 
+	public abstract void handleNotification(GUIObserver observer);
+	
 	public abstract NotificationType getNotificationType();
 }
