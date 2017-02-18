@@ -13,7 +13,7 @@ public interface GUIObserver {
 	
 	public void onViewPublicProfile(String name, String surname);
 	
-	public void onViewTransaction(String ref, double hours);
+	public void onViewTransaction(String ref, double hours, boolean isCreditor);
 	
 	public void onTransactionLoaded(String transref);
 	

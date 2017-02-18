@@ -164,7 +164,7 @@ public class TerminalGUI implements GUIObserver {
 	}
 
 	@Override
-	public void onViewTransaction(String ref, double hours) {
+	public void onViewTransaction(String ref, double hours, boolean isCreditor) {
 		// TODO Auto-generated method stub
 		
 	}

@@ -22,10 +22,4 @@ public interface CoreObserver {
 	public void onLookupFBMEntry(PastContent fbmEntry, boolean error, String msg);
 	
 	public void onLookupPublicProfile(PastContent publicProfile, boolean error, String msg);
-	
-	public void onReceivedLastAccountLedgerEntry(PastContent ledger, boolean error);
-	
-	public void onReceivedLastFAMEntry(PastContent fam, boolean error);
-	
-	public void onReceivedLastFBMEntry(PastContent fbm, boolean error);
 }

@@ -27,6 +27,11 @@ public class Controller {
 		core.viewTransaction(ref);
 	}
 	
+	public void debitorPaymentPhase1(String ref, String comment, int degreeOfStisfaction){
+		core.paymentProtocolDebtorPhase1(ref, comment, degreeOfStisfaction);
+		
+	}
+	
 	/*
 	public void startPaymentProtocolPhase1(){
 		

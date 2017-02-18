@@ -120,6 +120,9 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		paymentsSubpanel.add(transactionsScrollPane);
 		
 		viewTransaction = new JButton("View");
+		//viewTransaction.setActionCommand("viewTransaction");
+		viewTransaction.setName("viewTransaction");
+		viewTransaction.addActionListener(this);
 		paymentsPanel.add(viewTransaction);
 		
 		JPanel notificationsPanel = new JPanel();
@@ -146,6 +149,9 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		notificationsPanel.add(notificationsSubpanel, gbc_notificationsSubpanel);
 		
 		viewNotification = new JButton("View");
+		viewNotification.setActionCommand("viewNotification");
+		viewNotification.setName("viewNotification");
+		viewNotification.addActionListener(this);
 		notificationsPanel.add(viewNotification);
 		
 		notificationsListModel = new DefaultListModel<String>();
@@ -155,6 +161,20 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		paymentsSubpanel.add(transactionsScrollPane);
 		
 		this.setVisible(true);
+	}
+	
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		JButton b = (JButton) e.getSource();
+		String option = b.getName();
+		
+		if (option.equals("viewNotification")){
+			
+		}
+		else if (option.equals("viewTransaction")){
+			//System.out.println(transactionsList.getSelectedValue());
+			c.viewTransaction(transactionsList.getSelectedValue());
+		}
 	}
 
 	@Override
@@ -199,10 +219,10 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	}
 
 	@Override
-	public void onViewTransaction(String ref, double hours) {
+	public void onViewTransaction(String ref, double hours, boolean isCreditor) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
-				new ViewTransaction(c, ref, hours);
+				new ViewTransaction(c, ref, hours, isCreditor);
 			}
 		});
 	}
@@ -250,12 +270,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 				logTextPane.setText(logTextPane.getText() + "Succesful connection.\n");
 			}
 		});
-	}
-
-	@Override
-	public void actionPerformed(ActionEvent e) {
-		// TODO Auto-generated method stub
-		
 	}
 
 }

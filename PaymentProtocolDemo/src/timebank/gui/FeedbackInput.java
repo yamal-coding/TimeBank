@@ -9,6 +9,9 @@ import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
+
+import timebank.control.Controller;
+
 import javax.swing.JLabel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
@@ -28,6 +31,9 @@ public class FeedbackInput extends JDialog implements ActionListener {
 	private final String cancelActionCommand = "cancel";
 	
 	private Degree selectedDegree;
+	
+	private Controller c;
+	private String ref;
 	
 	private enum Degree {
 		NONE("0", 0), ONE("1", 1), TWO("2", 2), THREE("3", 3), FOUR("4", 4), FIVE("5", 5);
@@ -49,23 +55,15 @@ public class FeedbackInput extends JDialog implements ActionListener {
 		}
 	}
 	
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		try {
-			FeedbackInput dialog = new FeedbackInput();
-			dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-			dialog.setVisible(true);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 
-	/**
-	 * Create the dialog.
-	 */
-	public FeedbackInput() {
+	public FeedbackInput(Controller c, String ref){
+		this.c = c;
+		this.ref = ref;
+		
+		initGUI();
+	}
+	
+	public void initGUI() {
 		setBounds(100, 100, 621, 300);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -118,40 +116,50 @@ public class FeedbackInput extends JDialog implements ActionListener {
 		buttonPane.add(cancelButton);
 		cancelButton.setActionCommand(cancelActionCommand);
 		cancelButton.addActionListener(this);
+		
+		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+		setVisible(true);
 	}
 
 	@Override
-	public void actionPerformed(ActionEvent e) {		
+	public void actionPerformed(ActionEvent e) {
 		String action = e.getActionCommand();
 		
 		if (action.equals(okActionCommand)){
 			if (selectedDegree == Degree.NONE){
 				//mensaje de que hay que seleccionar un degree of satisfaction
+				
 			}
 			else {
 				String feedback = textPane.getText();
 				int degree = selectedDegree.getIndex();
 				
-				
+				c.debitorPaymentPhase1(ref, feedback, degree);
 			}
 		}
 		else if (action.equals(cancelActionCommand))
 			dispose();
 		
-		else if (action.equals(Degree.FIVE.toString()))
+		else if (action.equals(Degree.FIVE.toString())){
 			deselectOthers(Degree.FIVE.getIndex());
-		
-		else if (action.equals(Degree.FOUR.toString()))
+			selectedDegree = Degree.FIVE;
+		}
+		else if (action.equals(Degree.FOUR.toString())){
 			deselectOthers(Degree.FOUR.getIndex());
-		
-		else if (action.equals(Degree.THREE.toString()))
+			selectedDegree = Degree.FOUR;
+		}
+		else if (action.equals(Degree.THREE.toString())){
 			deselectOthers(Degree.THREE.getIndex());
-		
-		else if (action.equals(Degree.TWO.toString()))
+			selectedDegree = Degree.THREE;
+		}
+		else if (action.equals(Degree.TWO.toString())){
 			deselectOthers(Degree.TWO.getIndex());
-		
-		else if (action.equals(Degree.ONE.toString()))
+			selectedDegree = Degree.TWO;
+		}
+		else if (action.equals(Degree.ONE.toString())){
 			deselectOthers(Degree.ONE.getIndex());
+			selectedDegree = Degree.ONE;
+		}
 	}
 	
 	private void deselectOthers(int index){

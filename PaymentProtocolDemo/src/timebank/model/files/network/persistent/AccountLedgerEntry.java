@@ -123,6 +123,50 @@ public class AccountLedgerEntry extends DHTEntry {
 		this.self_digitalSignature = self_digitalSignature;
 	}
 	
+	/**
+	 * This constructor receive every field of the class.
+	 * @param myId
+	 * @param ledgerEntryNum
+	 * @param billsEntry_DHTHash
+	 * @param self_profile_DHTHash
+	 * @param other_profile_DHTHash
+	 * @param actualServiceHours
+	 * @param pre_balance
+	 * @param balance
+	 * @param self_previous_ledgerEntry_DHTHash
+	 * @param self_next_ledgerEntry_DHTHash
+	 * @param self_FBMEntry_DHTHash
+	 * @param other_FBMEntry_DHTHash
+	 * @param other_ledgerEntry_DHTHash
+	 * @param timeStamp_otherPartySignature
+	 * @param other_digitalSignature
+	 * @param timestamp_creation
+	 * @param self_digitalSignature
+	 */
+	public AccountLedgerEntry(Id myId, int ledgerEntryNum, Id billsEntry_DHTHash, Id self_profile_DHTHash,
+			Id other_profile_DHTHash, double actualServiceHours, double pre_balance, double balance,
+			Id self_previous_ledgerEntry_DHTHash, Id self_next_ledgerEntry_DHTHash, Id self_FBMEntry_DHTHash,
+			Id other_FBMEntry_DHTHash, Id other_ledgerEntry_DHTHash, Timestamp timeStamp_otherPartySignature,
+			String other_digitalSignature, Timestamp timestamp_creation, String self_digitalSignature) {
+		super(myId);
+		this.ledgerEntryNum = ledgerEntryNum;
+		this.billsEntry_DHTHash = billsEntry_DHTHash;
+		this.self_profile_DHTHash = self_profile_DHTHash;
+		this.other_profile_DHTHash = other_profile_DHTHash;
+		this.actualServiceHours = actualServiceHours;
+		this.pre_balance = pre_balance;
+		this.balance = balance;
+		this.self_previous_ledgerEntry_DHTHash = self_previous_ledgerEntry_DHTHash;
+		this.self_next_ledgerEntry_DHTHash = self_next_ledgerEntry_DHTHash;
+		this.self_FBMEntry_DHTHash = self_FBMEntry_DHTHash;
+		this.other_FBMEntry_DHTHash = other_FBMEntry_DHTHash;
+		this.other_ledgerEntry_DHTHash = other_ledgerEntry_DHTHash;
+		this.timeStamp_otherPartySignature = timeStamp_otherPartySignature;
+		this.other_digitalSignature = other_digitalSignature;
+		this.timestamp_creation = timestamp_creation;
+		this.self_digitalSignature = self_digitalSignature;
+	}
+	
 	/*public String getFileType() {
 		return fileType;
 	}*/

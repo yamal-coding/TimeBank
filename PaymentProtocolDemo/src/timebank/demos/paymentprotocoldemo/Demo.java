@@ -18,6 +18,7 @@ import timebank.gui.MainView;
 import timebank.gui.TerminalGUI;
 import timebank.model.Core;
 import timebank.model.files.local.PrivateProfile;
+import timebank.model.files.network.persistent.AccountLedgerEntry;
 import timebank.model.files.network.persistent.Bill;
 import timebank.model.files.network.persistent.EntryType;
 import timebank.model.files.network.persistent.FileType;
@@ -68,8 +69,8 @@ public class Demo {
 		PrivateProfile debitorPrivateProfile = createPrivateProfile(java.util.UUID.randomUUID());
 		PrivateProfile creditorPrivateProfile = createPrivateProfile(java.util.UUID.randomUUID());
 		
-		PastContent debitorPublicProfile = createPublicProfile(debitorPrivateProfile.getUUID(), false);
-		PastContent creditorPublicProfile = createPublicProfile(creditorPrivateProfile.getUUID(), true);
+		PublicProfile debitorPublicProfile = createPublicProfile(debitorPrivateProfile.getUUID(), false);
+		PublicProfile creditorPublicProfile = createPublicProfile(creditorPrivateProfile.getUUID(), true);
 
 		PastContent bill = createBill(creditorPrivateProfile.getUUID(), creditorPublicProfile.getId(), debitorPublicProfile.getId());
 		
@@ -79,7 +80,13 @@ public class Demo {
 		creditorPrivateProfile.setSelf_publicProfile_DHTHash(creditorPublicProfile.getId());
 		creditorPrivateProfile.addTransaction(bill.getId());
 		
-		storePublicProfilesAndBill(debitorPublicProfile, creditorPublicProfile, bill);
+		PastContent debtorLedger = createAccountLedgerEntry(debitorPublicProfile.getSelf_first_LedgerEntryDHTHash(),
+				creditorPublicProfile.getSelf_first_LedgerEntryDHTHash(), bill.getId(), debitorPublicProfile.getId(), creditorPublicProfile.getId(), debitorPrivateProfile.getUUID(), false);
+
+		PastContent creditorLedger = createAccountLedgerEntry(creditorPublicProfile.getSelf_first_LedgerEntryDHTHash(),
+				debitorPublicProfile.getSelf_first_LedgerEntryDHTHash(), bill.getId(), creditorPublicProfile.getId(), debitorPublicProfile.getId(), creditorPrivateProfile.getUUID(), true);
+		
+		storeDHTFiles(debitorPublicProfile, creditorPublicProfile, bill, debtorLedger, creditorLedger);
 		
 		P2PLayer debitorP2PLayer = new P2PLayer(new Environment());
 		P2PLayer creditorP2PLayer = new P2PLayer(new Environment());
@@ -165,13 +172,17 @@ public class Demo {
 	 * @param creditorPublicProfile
 	 * @param bill
 	 */
-	private void storePublicProfilesAndBill(PastContent debitorPublicProfile, PastContent creditorPublicProfile, PastContent bill){
-		past.insert(debitorPublicProfile, new InsertContinuationImpl(FileType.PUBLIC_PROFILE_ENTRY.toString() + ".debitorPublicProfile"));
+	private void storeDHTFiles(PastContent debitorPublicProfile, PastContent creditorPublicProfile, PastContent bill,
+			PastContent debtorLedger, PastContent creditorLedger){
+		past.insert(debitorPublicProfile, new InsertContinuationImpl(FileType.PUBLIC_PROFILE_ENTRY.toString() + ".debtorPublicProfile"));
 		
 		past.insert(creditorPublicProfile, new InsertContinuationImpl(FileType.PUBLIC_PROFILE_ENTRY.toString() + ".creditorPublicProfile"));
 		
 		past.insert(bill, new InsertContinuationImpl(FileType.BILL_ENTRY.toString() + ".Bill"));
 		
+		past.insert(debtorLedger, new InsertContinuationImpl(FileType.ACCOUNT_LEDGER_ENTRY.toString() + ".debtorFirstAccountLedgerEntry"));
+		
+		past.insert(creditorLedger, new InsertContinuationImpl(FileType.ACCOUNT_LEDGER_ENTRY.toString() + ".creditorFirstAccountLedgerEntry"));
 	}
 	
 	/**
@@ -243,7 +254,7 @@ public class Demo {
 		}
 		
 		//A lo mejor se puede hacer un patron factoria para este tipo de cosas
-		Id self_last_LedgerEntryDHTHash = Util.makeDHTHash(idFactory, userUUID, 1, null, FileType.ACCOUNT_LEDGER_ENTRY, EntryType.FINAL_ENTRY);
+		Id self_first_LedgerEntryDHTHash = Util.makeDHTHash(idFactory, userUUID, 1, null, FileType.ACCOUNT_LEDGER_ENTRY, EntryType.FINAL_ENTRY);
 		Id self_last_FAMEntryDHTHash = Util.makeDHTHash(idFactory, userUUID, 1, null, FileType.FAM_ENTRY, EntryType.FINAL_ENTRY);
 		Id self_last_FBMEntryDHTHash = Util.makeDHTHash(idFactory, userUUID, 1, null, FileType.FBM_ENTRY, EntryType.FINAL_ENTRY);
 		
@@ -251,8 +262,39 @@ public class Demo {
 		
 		return new PublicProfile(debitorPublicProfile_DHTHash, 
 				self_firstName, self_surnames, self_telephone, self_email, self_address, 
-				timestamp_creation, self_digitalSignature_creation, self_last_LedgerEntryDHTHash, 
+				timestamp_creation, self_digitalSignature_creation, self_first_LedgerEntryDHTHash, 
 				self_last_FAMEntryDHTHash, self_last_FBMEntryDHTHash);
+	}
+	
+	private AccountLedgerEntry createAccountLedgerEntry(Id selfId, Id otherId,  Id billDHTHash, Id selfProfileDHTHash, Id otherProfileDHTHash, UUID userUUID, boolean isCreditor){
+		double pre_balance, balance;
+		String self_digitalSignature, other_digitalSignature;
+		int actualServiceHours;
+		
+		if (isCreditor){
+			pre_balance = 40;
+			balance = 30;
+			self_digitalSignature = "Creditor digiral signature";
+			other_digitalSignature = "Debtor digital signature";
+			actualServiceHours = 10;
+		}
+		else{
+			pre_balance = 10;
+			balance = 20;
+			actualServiceHours = 5;
+			self_digitalSignature = "Debtor digital signature";
+			other_digitalSignature = "Creditor digital signature";
+		}
+		
+		Id self_next_ledgerEntry_DHTHash = Util.makeDHTHash(idFactory, userUUID, 2, null, 
+				FileType.ACCOUNT_LEDGER_ENTRY, EntryType.FINAL_ENTRY);
+		
+		//En este caso no nos importa que no tenga FBM ni FAM
+		return new AccountLedgerEntry(selfId, 1, billDHTHash, selfProfileDHTHash, otherProfileDHTHash, 
+				actualServiceHours, pre_balance, balance, null, 
+				self_next_ledgerEntry_DHTHash, null, null, 
+				otherId, new Timestamp(System.currentTimeMillis()), other_digitalSignature, 
+				new Timestamp(System.currentTimeMillis()), self_digitalSignature);
 	}
 	
 	/**

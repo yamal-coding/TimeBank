@@ -60,6 +60,16 @@ public class Core implements CoreObserver {
 	//Entries loaded from DHT. They will be removed from the hash map when used
 	private /*volatile*/ Map<Id, DHTEntry> loadedDHTEntries;
 	
+	//these boolean values indicate if it is necessary to load one more DHT entry
+	private AccountLedgerEntry lastLedger;
+	private boolean loadMoreLedger;
+	
+	private FAMEntry lastFAM;
+	private boolean loadMoreFAM;
+	
+	private FBMEntry lastFBM;
+	private boolean loadMoreFBM;
+	
 	//This map is required to store the own FAMEntries DHTHashes because we need them in the last payment phase as creditor.
 	//This hash is previously calculated in another phase and we need to store it to get it back later in the last payment phase.
 	private Map<String, Id> storedFAMEntryDHTHashes;
@@ -75,6 +85,9 @@ public class Core implements CoreObserver {
 	 * @param privateProfile
 	 */
 	public Core(P2PLayer p2pLayer, PrivateProfile privateProfile){
+		this.loadMoreLedger = false;
+		this.loadMoreFAM = false;
+		this.loadMoreFBM = false;
 		this.loadedBills = new HashMap<String, Bill>();
 		this.loadedDHTEntries = new HashMap<Id, DHTEntry>();
 		this.storedFAMEntryDHTHashes = new HashMap<String, Id>();
@@ -98,7 +111,8 @@ public class Core implements CoreObserver {
 	
 	public void viewTransaction(String ref){
 		Bill bill = loadedBills.get(ref);
-		guiObserver.onViewTransaction(ref, bill.getActualServiceHours());
+		boolean isCreditor = bill.getSelf_profile_DHTHash().equals(publicProfile.getId()); 
+		guiObserver.onViewTransaction(ref, bill.getActualServiceHours(), isCreditor);
 	}
 	
 	public void viewPublicProfile(){
@@ -154,10 +168,10 @@ public class Core implements CoreObserver {
 						loadTransactionsSemaphore.acquire();
 						
 						for (Map.Entry<String, Bill> entry : loadedBills.entrySet()){
-							if (entry.getValue().getSelf_profile_DHTHash().equals(publicProfile.getId()))
+							//if (entry.getValue().getSelf_profile_DHTHash().equals(publicProfile.getId()))
 								guiObserver.onTransactionLoaded(entry.getValue().getSelf_transRef());
-							else
-								guiObserver.onTransactionLoaded(entry.getValue().getOther_transRef());
+							//else
+								//guiObserver.onTransactionLoaded(entry.getValue().getOther_transRef());
 						}
 					}
 					
@@ -185,17 +199,34 @@ public class Core implements CoreObserver {
 		//ledgerEntryNum
 		//pre-balance
 		//self_previous_ledgerEntry_DHTHash
-		AccountLedgerEntry lastLedger = loadLastAccountLedgerEntry();
+		loadLastAccountLedgerEntry();
+		//si es nulo deberian crearse parametros iniciales para el nuevo AccountLedger que se creara, que sera el primero
+		if (lastLedger == null){
+			//TODO
+			//Crear parametros iniciales
+		}
+		
+		
 		
 		//The last FAMEntry must be loaded from DHT to know the next parameters:
 		//FAMEntryNum
 		//self_previous_FAMEntry_DHTHash
-		FAMEntry lastFAM = loadLastFAMEntry();
+		loadLastFAMEntry();
+		//si es nulo deberian crearse parametros iniciales para el nuevo FAM que se creara, que sera el primero
+		if (lastFAM == null){
+			//TODO
+			//Crear parametros iniciales
+		}
 		
 		//The last FBMEntry must be loaded from DHT to know the next parameters:
 		//FBMEntryNum
 		//self_previous_FAMEntry_DHTHash
-		FBMEntry lastFBM = loadLastFBMEntry();
+		loadLastFBMEntry();
+		//si es nulo deberian crearse parametros iniciales para el nuevo FAM que se creara, que sera el primero
+		if (lastFBM == null){
+			//TODO
+			//Crear parametros iniciales
+		}
 		
 		//With the bill information the next partial entries are created
 		
@@ -231,7 +262,7 @@ public class Core implements CoreObserver {
 			// TODO
 			
 			//NOTIFY THE ERROR OF THE OPERATION
-		}
+		}*/
 	}
 
 	private void storeFilesDebitorPaymentProtocolPhase1(AccountLedgerEntry debitorLedgerEntryPE1,
@@ -289,17 +320,17 @@ public class Core implements CoreObserver {
 			//ledgerEntryNum
 			//pre-balance
 			//self_previous_ledgerEntry_DHTHash
-			AccountLedgerEntry lastLedger = loadLastAccountLedgerEntry();
+			loadLastAccountLedgerEntry();
 			
 			//The last FAMEntry must be loaded from DHT to know the next parameters:
 			//FAMEntryNum
 			//self_previous_FAMEntry_DHTHash
-			FAMEntry lastFAM = loadLastFAMEntry();
+			loadLastFAMEntry();
 			
 			//The last FBMEntry must be loaded from DHT to know the next parameters:
 			//FBMEntryNum
 			//self_previous_FAMEntry_DHTHash
-			FBMEntry lastFBM = loadLastFBMEntry();
+			loadLastFBMEntry();
 			
 			//With bill information creates the next partial entries
 			//creditorLedgerPE1
@@ -568,7 +599,9 @@ public class Core implements CoreObserver {
 		p2pLayer.put(creditorFAM, "debitorFADebitorEntry", FileType.FAM_ENTRY);
 	}
 	
-	private AccountLedgerEntry loadLastAccountLedgerEntry(){
+	private synchronized void loadLastAccountLedgerEntry(){
+		this.loadMoreLedger = true;
+		
 		p2pLayer.get(publicProfile.getSelf_first_LedgerEntryDHTHash(), "firstLedgerEntry", FileType.ACCOUNT_LEDGER_ENTRY);
 		
 		try {
@@ -577,11 +610,11 @@ public class Core implements CoreObserver {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		return null;
 	}
 
-	private FAMEntry loadLastFAMEntry(){
+	private void loadLastFAMEntry(){
+		this.loadMoreLedger = true;
+		
 		p2pLayer.get(publicProfile.getSelf_first_FAMEntryDHTHash(), "firstFAMEntry", FileType.FAM_ENTRY);
 		
 		try {
@@ -590,8 +623,6 @@ public class Core implements CoreObserver {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-		
-		return null;
 	}
 	
 	private FBMEntry loadLastFBMEntry(){
@@ -696,13 +727,24 @@ public class Core implements CoreObserver {
 	 */
 	@Override
 	public synchronized void onLookupAccountLedger(PastContent accountLedger, boolean error, String msg) {
-		if (error){
-			//Handle error
+		if (error || accountLedger == null){
+			//If an error occurred then it is supposed that there is no next ledger to load
+			loadMoreLedger = false;
+			notifyAll();
 		}
 		else{
 			try {
-				AccountLedgerEntry ledger = (AccountLedgerEntry) accountLedger;
-				//to do
+				lastLedger = (AccountLedgerEntry) accountLedger;
+				
+				if (loadMoreLedger){
+					int num = lastLedger.getLedgerEntryNum() + 1;
+					
+					p2pLayer.get(lastLedger.getSelf_next_ledgerEntry_DHTHash(), 
+							"AccountLedgerEntry " + num, FileType.ACCOUNT_LEDGER_ENTRY);
+				}
+				else
+					notifyAll();
+					
 			}
 			catch (ClassCastException e){
 				//Handle error
@@ -780,73 +822,5 @@ public class Core implements CoreObserver {
 		}
 		
 		loadPublicProfileSemaphore.release();
-	}
-
-	@Override
-	public void onReceivedLastAccountLedgerEntry(PastContent ledger, boolean error) {
-		if (error){
-			//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
-			//se puede establecer un sistema de reintentos que si la busqueda devuelve error
-			//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
-			notify();
-		}
-		else{
-			try{
-				AccountLedgerEntry lastLedger = (AccountLedgerEntry) ledger;
-				p2pLayer.get(lastLedger.getSelf_next_ledgerEntry_DHTHash(), "ledgerEntry" + lastLedger.getLedgerEntryNum() + 1, FileType.ACCOUNT_LEDGER_ENTRY);
-			}
-			catch (ClassCastException e){
-				//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
-				//se puede establecer un sistema de reintentos que si la busqueda devuelve error
-				//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
-				notify();
-			}
-		}
-		
-	}
-	
-	@Override
-	public void onReceivedLastFAMEntry(PastContent fam, boolean error) {
-		if (error){
-			//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
-			//se puede establecer un sistema de reintentos que si la busqueda devuelve error
-			//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
-			notify();
-		}
-		else{
-			try{
-				FAMEntry lastFAM = (FAMEntry) fam;
-				p2pLayer.get(lastFAM.getSelf_next_FAMEntry_DHTHash(), "FAMEntry" + lastFAM.getFAMEntryNum() + 1, FileType.FAM_ENTRY);
-			}
-			catch (ClassCastException e){
-				//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
-				//se puede establecer un sistema de reintentos que si la busqueda devuelve error
-				//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
-				notify();
-			}
-		}
-	}
-	
-	@Override
-	public void onReceivedLastFBMEntry(PastContent fbm, boolean error) {
-		if (error){
-			//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
-			//se puede establecer un sistema de reintentos que si la busqueda devuelve error
-			//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
-			notify();
-		}
-		else{
-			try{
-				FBMEntry lastFBM = (FBMEntry) fbm;
-				p2pLayer.get(lastFBM.getSelf_next_FBMEntry_DHTHash(), "FBMEntry" + lastFBM.getFBMEntryNum() + 1, FileType.FBM_ENTRY);
-			}
-			catch (ClassCastException e){
-				//Si ha habido error significa que no lo ha encontrado o que ha habido algun fallo
-				//se puede establecer un sistema de reintentos que si la busqueda devuelve error
-				//una serie de veces se da por hecho que no existe y se despierta al hilo en espera
-				notify();
-			}
-		}
-		
 	}
 }
