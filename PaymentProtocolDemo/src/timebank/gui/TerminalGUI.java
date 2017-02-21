@@ -7,7 +7,7 @@ import java.util.Scanner;
 import timebank.control.Controller;
 import timebank.observer.GUIObserver;
 
-public abstract class TerminalGUI implements GUIObserver {
+public class TerminalGUI implements GUIObserver {
 	private Controller c;
 	private List<String> notifications;
 	private List<String> transactions;
@@ -165,6 +165,24 @@ public abstract class TerminalGUI implements GUIObserver {
 
 	@Override
 	public void onViewTransaction(String ref, double hours, boolean isCreditor) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onLogMessage(String msg) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onNewlyStartedPayment(String notRef, String transRef) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onPhase1ValidationSuccess(String notificationRef) {
 		// TODO Auto-generated method stub
 		
 	}

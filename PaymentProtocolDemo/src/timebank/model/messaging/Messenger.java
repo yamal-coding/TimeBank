@@ -74,7 +74,7 @@ public class Messenger implements Application {
 		try {
 			Notification notif = (Notification) arg1;
 			
-			notifications.put(notif.getRef(), notif);
+			notifications.put(notif.getNotificationReference(), notif);
 			
 			coreObserver.onReceiveNotification(notif);
 		}

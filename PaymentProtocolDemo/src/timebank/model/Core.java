@@ -135,8 +135,7 @@ public class Core implements CoreObserver {
 	
 	public void handleNotification(String ref){
 		try {
-			Notification not = messenger.getNotification(ref);
-			not.handleNotification(guiObserver);
+			messenger.getNotification(ref).handleNotification(guiObserver);
 		} catch (NonExistingNotificationException e) {
 			// TODO Auto-generated catch block
 			
@@ -252,6 +251,13 @@ public class Core implements CoreObserver {
 		//store the corresponding entries into DHT
 		storeFilesDebitorPaymentProtocolPhase1(debitorLedgerEntryPE1, creditorFADebitorPE1, debitorFBMEntryPE1);
 		
+		if (lastLedger != null)
+			loadedDHTEntries.remove(lastLedger.getId());
+		if (lastFAM != null)
+			loadedDHTEntries.remove(lastFAM.getId());
+		if (lastFBM != null)
+			loadedDHTEntries.remove(lastFBM.getId());
+		
 		//the hashes and ids of the entries are sent as Notification objects to the creditor
 		//Notify when p2pLayer notifies to this class the successful storage
 		
@@ -309,7 +315,11 @@ public class Core implements CoreObserver {
 			//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
 			
 			//Wait until the three files are successfully loaded
-			//wait()
+			
+
+			loadAccountLedgerSemaphore.acquire();
+			loadFAMSemaphore.acquire();
+			loadFBMSemaphore.acquire();
 			
 			AccountLedgerEntry debitorLedgerEntryPE1 = (AccountLedgerEntry) loadedDHTEntries.get(notificationPhase1.getDebitorLedgerPE1Hash());
 			FAMEntry creditorFADebitorPE1 = (FAMEntry) loadedDHTEntries.get(notificationPhase1.getCreditorFADebitorPE1Hash());
@@ -317,9 +327,13 @@ public class Core implements CoreObserver {
 			//Creditor validates these files. An error is returned if one or more files are not well formed
 			entryValidator.validatePaymentPhase1();
 		
+			guiObserver.onPhase1ValidationSuccess(notificationRef);
 		
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
@@ -329,7 +343,7 @@ public class Core implements CoreObserver {
 		try {
 			NotificationPaymentPhase1 notificationPhase1 = (NotificationPaymentPhase1) messenger.getNotification(notificationRef);
 			
-			String transRef = notificationPhase1.getRef();
+			String transRef = notificationPhase1.getTransactionReference();
 			
 			//Creditor loads from DHT the bill associated to the current payment
 			Bill bill = loadedBills.get(transRef);
@@ -398,6 +412,13 @@ public class Core implements CoreObserver {
 			loadedDHTEntries.remove(notificationPhase1.getCreditorFADebitorPE1Hash());
 			loadedDHTEntries.remove(notificationPhase1.getDebitorFBMPE1Hash());
 			
+			if (lastLedger != null)
+				loadedDHTEntries.remove(lastLedger.getId());
+			if (lastFAM != null)
+				loadedDHTEntries.remove(lastFAM.getId());
+			if (lastFBM != null)
+				loadedDHTEntries.remove(lastFBM.getId());
+			
 			//store the corresponding entries into DHT
 			storeFilesCreditorPaymentProtocolPhase2(creditorLedgerEntryPE1, debitorFACreditorPE1, creditorFBMEntryPE1,
 					debitorLedgerEntryPE2, creditorFADebitorPE2, debitorFBMEntryPE2);
@@ -410,7 +431,23 @@ public class Core implements CoreObserver {
 					creditorLedgerEntryPE1.getId(), debitorFACreditorPE1.getId(), creditorFBMEntryPE1.getId(),
 					debitorLedgerEntryPE2.getId(), creditorFADebitorPE2.getId(), debitorFBMEntryPE2.getId());
 			
-			messenger.sendNotification(null, notificationPhase2);
+			LeafSet leafSet = p2pLayer.getNode().getLeafSet();
+			
+			
+			for (int i = 0; i <= leafSet.ccwSize(); i++){
+			      if (i != 0) { //Para no enviarse el mensaje a si mismo
+			    	//Recuperamos el NodeHandler del nodo vecino i. Contiene informacion del nodo.
+			        NodeHandle nh = leafSet.get(i);
+			        
+			        messenger.sendNotification(nh, notificationPhase2);
+			        
+			        try {
+						Thread.sleep(400);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+			      }
+			    }
 			
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
@@ -476,7 +513,7 @@ public class Core implements CoreObserver {
 		try {
 			notificationPhase2 = (NotificationPaymentPhase2) messenger.getNotification(notificationRef);
 		
-			String transRef= notificationPhase2.getRef();
+			String transRef= notificationPhase2.getTransactionReference();
 			
 			AccountLedgerEntry debitorLedgerEntryPE2 = (AccountLedgerEntry) loadedDHTEntries.get(notificationPhase2.getDebitorLedgerPE2Hash());
 			FBMEntry debitorFBMEntryPE2 = (FBMEntry) loadedDHTEntries.get(notificationPhase2.getDebitorFBMPE2Hash());
@@ -580,7 +617,7 @@ public class Core implements CoreObserver {
 		try {
 			NotificationPaymentPhase3 notificationPhase3 = (NotificationPaymentPhase3) messenger.getNotification(notificationRef);
 			
-			String transRef = notificationPhase3.getRef();
+			String transRef = notificationPhase3.getTransactionReference();
 			
 			AccountLedgerEntry creditorLedgerEntryPE2 = (AccountLedgerEntry) loadedDHTEntries.get(notificationPhase3.getCreditorLedgerPE2());
 			FBMEntry creditorFBMEntryPE2 = (FBMEntry) loadedDHTEntries.get(notificationPhase3.getCreditorFBMPE2());
@@ -679,7 +716,7 @@ public class Core implements CoreObserver {
 	@Override
 	public void onReceiveNotification(Notification notification) {
 		//notificationsReceived.put(notification.getRef(), notification);
-		guiObserver.onReceiveNotification(notification.getRef());
+		guiObserver.onReceiveNotification(notification.getNotificationReference());
 	}
 
 	/**
@@ -757,8 +794,12 @@ public class Core implements CoreObserver {
 		else{
 			try {
 				lastLedger = (AccountLedgerEntry) accountLedger;
+
+				loadedDHTEntries.put(lastLedger.getId(), lastLedger);
 				
 				if (loadMoreLedger){
+					loadedDHTEntries.remove(lastLedger.getSelf_previous_ledgerEntry_DHTHash());
+					
 					int num = lastLedger.getLedgerEntryNum() + 1;
 					p2pLayer.get(lastLedger.getSelf_next_ledgerEntry_DHTHash(), 
 							"AccountLedgerEntry " + num, FileType.ACCOUNT_LEDGER_ENTRY);
@@ -789,8 +830,11 @@ public class Core implements CoreObserver {
 		else{
 			try {
 				lastFAM = (FAMEntry) famEntry;
+				loadedDHTEntries.put(lastFAM.getId(), lastFAM);
 				
 				if (loadMoreFAM){
+					loadedDHTEntries.remove(lastFAM.getSelf_previous_FAMEntry_DHTHash());
+					
 					int num = lastFAM.getFAMEntryNum() + 1;
 					p2pLayer.get(lastFAM.getSelf_next_FAMEntry_DHTHash(), "FAMEntry " + num, FileType.FAM_ENTRY);
 				}
@@ -821,7 +865,11 @@ public class Core implements CoreObserver {
 			try {
 				lastFBM = (FBMEntry) fbmEntry;
 				
+				loadedDHTEntries.put(lastFBM.getId(), lastFBM);
+				
 				if (loadMoreFBM){
+					loadedDHTEntries.remove(lastFBM.getSelf_previous_FBMEntry_DHTHash());
+					
 					int num = lastFBM.getFBMEntryNum() + 1;
 					p2pLayer.get(lastFBM.getSelf_next_FBMEntry_DHTHash(), "FBMEntry " + num, FileType.FBM_ENTRY);
 				}

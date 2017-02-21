@@ -152,7 +152,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		notificationsList = new JList<String>(notificationsListModel);
 		JScrollPane notificationsScrollPane = new JScrollPane();
 		notificationsScrollPane.setViewportView(notificationsList);
-		notificationsListModel.addElement("Prueba");
 		notificationsSubpanel.add(notificationsScrollPane);
 		
 		
@@ -171,7 +170,7 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		String option = b.getName();
 		
 		if (option.equals("viewNotification")){
-			
+			c.handleNotification(notificationsList.getSelectedValue());
 		}
 		else if (option.equals("viewTransaction")){
 			//System.out.println(transactionsList.getSelectedValue());
@@ -285,16 +284,27 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	}
 
 	@Override
-	public void onNewlyStartedPayment(String notRef, String transRef, String name) {
+	public void onNewlyStartedPayment(String notRef, String transRef) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				//Las cosas que se preguntaran aqui son si el Creditor desea validar ahora o no
 				//los ficheros parciales de la primera fase del pago creados por el Debtor asociados
 				//a la notificacion recibida
-				
-				
+				new NewlyStartedPayment(c, notRef, transRef);
 			}
 		});
+	}
+
+	@Override
+	public void onPhase1ValidationSuccess(String notificationRef) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				//Notificar que la validacion de los ficheros de la primera fase son correctos
+				//y pedir el feedback y enviarlo para empezar la segunda fase por parte del creditor
+				logTextPane.setText(logTextPane.getText() + "Validacion fase 1 exitosa\n");
+				new FeedbackInput(c, notificationRef, true);
+			}
+		});	
 	}
 
 }

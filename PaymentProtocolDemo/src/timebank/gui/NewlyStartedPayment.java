@@ -2,11 +2,13 @@ package timebank.gui;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.JButton;
 import javax.swing.JDialog;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.border.EmptyBorder;
 
@@ -19,13 +21,11 @@ public class NewlyStartedPayment extends JDialog {
 	private Controller c;
 	private String notificationRef;
 	private String transactionRef;
-	private String debtorName;
 	
-	public NewlyStartedPayment(Controller c, String notRef, String transRef, String debName){
+	public NewlyStartedPayment(Controller c, String notRef, String transRef){
 		this.c = c;
 		this.notificationRef = notRef;
 		this.transactionRef = transRef;
-		this.debtorName = debName;
 		
 		initGUI();
 	}
@@ -33,10 +33,16 @@ public class NewlyStartedPayment extends JDialog {
 	public void initGUI() {
 		setBounds(100, 100, 450, 300);
 		getContentPane().setLayout(new BorderLayout());
-		contentPanel.setLayout(new FlowLayout());
+		contentPanel.setLayout(new GridLayout(3, 1));
 		contentPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		
+		contentPanel.add(new JLabel("You have a new notification:"));
+
+		contentPanel.add(new JLabel("Notification reference: " + notificationRef));
+		
+		contentPanel.add(new JLabel("This notification refers to the transaction: " + transactionRef));
+
 		JPanel buttonPane = new JPanel();
 		buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
 		getContentPane().add(buttonPane, BorderLayout.SOUTH);
@@ -48,7 +54,8 @@ public class NewlyStartedPayment extends JDialog {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				new FeedbackInput(c, notificationRef, true);
+				c.creditorPaymentPhase1(notificationRef);
+				dispose();
 			}
 		});
 	

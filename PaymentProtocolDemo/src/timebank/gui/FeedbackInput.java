@@ -137,10 +137,12 @@ public class FeedbackInput extends JDialog implements ActionListener {
 				int degree = selectedDegree.getIndex();
 				
 				if (isCreditor){
-					
+					c.creditorPaymentPhase2(ref, feedback, degree);
 				}
 				else
 					c.debitorPaymentPhase1(ref, feedback, degree);
+				
+				dispose();
 			}
 		}
 		else if (action.equals(cancelActionCommand))

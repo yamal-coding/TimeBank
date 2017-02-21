@@ -13,7 +13,7 @@ import timebank.observer.GUIObserver;
  *
  */
 public abstract class Notification implements Message {
-	protected String ref; //reference to this notification
+	protected String notificationRef; //reference to this notification
 	protected Id from;
 	
 	/**
@@ -26,15 +26,15 @@ public abstract class Notification implements Message {
 		this.from = from;
 		//The reference of this notification has to be unique so it is formed by a concatenation of the id
 		//of sender and a timestamp
-		this.ref = (new Timestamp(System.currentTimeMillis())).toString() + from.toString();
+		this.notificationRef = (new Timestamp(System.currentTimeMillis())).toString() + from.toString();
 	}
 	
 	/**
 	 * Returns the reference to this pair
 	 * @return
 	 */
-	public String getRef(){
-		return ref;
+	public String getNotificationReference(){
+		return notificationRef;
 	}
 	
 	/**

@@ -36,8 +36,12 @@ public class Controller {
 		
 	}
 	
-	public void creditorPaymentPhase1(){
-		
+	public void creditorPaymentPhase1(String notificationRef){
+		core.paymentProtocolCreditorPhase1(notificationRef);
+	}
+	
+	public void creditorPaymentPhase2(String notificationRef, String comment, int degreeOfSatisfaction){
+		core.paymentProtocolCreditorPhase2(notificationRef, comment, degreeOfSatisfaction);
 	}
 	
 	/*
