@@ -26,7 +26,7 @@ public class NotificationPaymentPhase1 extends NotificationPayment {
 		//Esta notificacion se recibe en la primera fase del pago siendo un Creditor,
 		//por lo que hay que decir en la vista que el debitor X ha iniciado el pago y preguntar
 		//si el Creditor desea proceder con la siguiente fase del pago
-		observer.onNewlyStartedPayment(notificationRef, transRef);
+		observer.onPaymentPhase1Started(notificationRef, transRef);
 	}
 
 	public Id getDebitorLedgerPE1Hash() {

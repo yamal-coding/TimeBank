@@ -33,7 +33,7 @@ public class NotificationPaymentPhase2 extends NotificationPayment {
 	}
 	
 	public void handleNotification(GUIObserver observer){
-		
+		observer.onPaymentPhase2Started(notificationRef, transRef);
 	}
 	
 	public Id getCreditorLedgerPE1Hash() {

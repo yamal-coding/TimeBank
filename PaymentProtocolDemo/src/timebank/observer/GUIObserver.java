@@ -24,8 +24,11 @@ public interface GUIObserver {
 	public void onLogMessage(String msg);
 	
 	//Este metodo se llama cuando se abre una notificacion de tipo NotificationPaymentPhase1
-	public void onNewlyStartedPayment(String notRef, String transRef);
+	public void onPaymentPhase1Started(String notRef, String transRef);
 	
-	public void onPhase1ValidationSuccess(String notificationRef);
+	public void onPaymentPhase1ValidationSuccess(String notificationRef);
 	
+	public void onPaymentPhase2Started(String notRef, String transRef);
+	
+	public void onPaymentPhase2ValidationSuccess(String notificationRef);
 }

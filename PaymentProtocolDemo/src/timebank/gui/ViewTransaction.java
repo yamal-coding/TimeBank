@@ -57,6 +57,7 @@ public class ViewTransaction extends JDialog{
 				@Override
 				public void actionPerformed(ActionEvent e) {
 					new FeedbackInput(c, ref, isCreditor);
+					dispose();
 				}
 			});
 		}

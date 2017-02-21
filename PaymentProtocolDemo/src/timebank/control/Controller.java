@@ -44,6 +44,14 @@ public class Controller {
 		core.paymentProtocolCreditorPhase2(notificationRef, comment, degreeOfSatisfaction);
 	}
 	
+	public void debitorPaymentPhase2(String notificationRef){
+		core.paymentProtocolDebitorPhase2(notificationRef);
+	}
+	
+	public void debitorPaymentPhase3(String notificationRef){
+		core.paymentProtocolDebitorPhase3(notificationRef);
+	}
+	
 	/*
 	public void startPaymentProtocolPhase1(){
 		

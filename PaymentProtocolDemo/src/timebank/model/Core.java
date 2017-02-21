@@ -269,26 +269,26 @@ public class Core implements CoreObserver {
 			
 			
 			for (int i = 0; i <= leafSet.ccwSize(); i++){
-			      if (i != 0) { //Para no enviarse el mensaje a si mismo
-			    	//Recuperamos el NodeHandler del nodo vecino i. Contiene informacion del nodo.
-			        NodeHandle nh = leafSet.get(i);
-			        
-			        messenger.sendNotification(nh, notificationPhase1);
-			        
-			        try {
-						Thread.sleep(400);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-			      }
-			    }
+		      if (i != 0) { //Para no enviarse el mensaje a si mismo
+		    	//Recuperamos el NodeHandler del nodo vecino i. Contiene informacion del nodo.
+		        NodeHandle nh = leafSet.get(i);
+		        
+		        messenger.sendNotification(nh, notificationPhase1);
+		        
+		        try {
+					Thread.sleep(400);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+		      }
+		    }
 		} catch (NodeNotInitializedException e) {
 			// TODO
 			
 			//NOTIFY THE ERROR OF THE OPERATION
 		}
 	}
-
+	
 	private void storeFilesDebitorPaymentProtocolPhase1(AccountLedgerEntry debitorLedgerEntryPE1,
 			FAMEntry creditorFADebitorPE1, FBMEntry debitorFBMEntryPE1) {
 		p2pLayer.put(debitorLedgerEntryPE1, "debitorLedgerEntryPE1", FileType.ACCOUNT_LEDGER_ENTRY);
@@ -315,8 +315,6 @@ public class Core implements CoreObserver {
 			//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
 			
 			//Wait until the three files are successfully loaded
-			
-
 			loadAccountLedgerSemaphore.acquire();
 			loadFAMSemaphore.acquire();
 			loadFBMSemaphore.acquire();
@@ -327,7 +325,7 @@ public class Core implements CoreObserver {
 			//Creditor validates these files. An error is returned if one or more files are not well formed
 			entryValidator.validatePaymentPhase1();
 		
-			guiObserver.onPhase1ValidationSuccess(notificationRef);
+			guiObserver.onPaymentPhase1ValidationSuccess(notificationRef);
 		
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
@@ -433,21 +431,20 @@ public class Core implements CoreObserver {
 			
 			LeafSet leafSet = p2pLayer.getNode().getLeafSet();
 			
-			
 			for (int i = 0; i <= leafSet.ccwSize(); i++){
-			      if (i != 0) { //Para no enviarse el mensaje a si mismo
-			    	//Recuperamos el NodeHandler del nodo vecino i. Contiene informacion del nodo.
-			        NodeHandle nh = leafSet.get(i);
-			        
-			        messenger.sendNotification(nh, notificationPhase2);
-			        
-			        try {
-						Thread.sleep(400);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-			      }
-			    }
+		      if (i != 0) { //Para no enviarse el mensaje a si mismo
+		    	//Recuperamos el NodeHandler del nodo vecino i. Contiene informacion del nodo.
+		        NodeHandle nh = leafSet.get(i);
+		        
+		        messenger.sendNotification(nh, notificationPhase2);
+		        
+		        try {
+					Thread.sleep(400);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+		      }
+		    }
 			
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
@@ -471,11 +468,10 @@ public class Core implements CoreObserver {
 	
 	public void paymentProtocolDebitorPhase2(String notificationRef){
 		//TODO
-		
 		try {
 			NotificationPaymentPhase2 notificationPhase2 = (NotificationPaymentPhase2) messenger.getNotification(notificationRef);
 		
-			//With the NotificationPairs (id and hash) received from creditor, the debtor loads
+			//With the Notification received from creditor, the debtor loads
 			//the corresponding files
 			
 			//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
@@ -487,11 +483,15 @@ public class Core implements CoreObserver {
 			p2pLayer.get(notificationPhase2.getCreditorFADebitorPE2Hash(), "", FileType.FAM_ENTRY);
 			p2pLayer.get(notificationPhase2.getDebitorFBMPE2Hash(), "", FileType.FBM_ENTRY);
 			
-			
-			//Debitor validates these files. An error is returned if one or more files are not well formed
-
 			//Wait until the three files are successfully loaded
-			//wait()
+			loadAccountLedgerSemaphore.acquire();
+			loadFAMSemaphore.acquire();
+			loadFBMSemaphore.acquire();
+
+			loadAccountLedgerSemaphore.acquire();
+			loadFAMSemaphore.acquire();
+			loadFBMSemaphore.acquire();
+			
 			AccountLedgerEntry debitorLedgerEntryPE2 = (AccountLedgerEntry) loadedDHTEntries.get(notificationPhase2.getDebitorLedgerPE2Hash());
 			FBMEntry debitorFBMEntryPE2 = (FBMEntry) loadedDHTEntries.get(notificationPhase2.getDebitorFBMPE2Hash());
 			FAMEntry creditorFADebitorPE2 = (FAMEntry) loadedDHTEntries.get(notificationPhase2.getCreditorFADebitorPE2Hash());
@@ -502,13 +502,18 @@ public class Core implements CoreObserver {
 			
 			//Creditor validates these files. An error is returned if one or more files are not well formed
 			entryValidator.validatePaymentPhase2();
+			
+			guiObserver.onPaymentPhase2ValidationSuccess(notificationRef);
 		
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
-	public void paymentProtocolDebitorPhase3(String notificationRef, String comment, int degreeOfSatisfaction){
+	public void paymentProtocolDebitorPhase3(String notificationRef){
 		NotificationPaymentPhase2 notificationPhase2;
 		try {
 			notificationPhase2 = (NotificationPaymentPhase2) messenger.getNotification(notificationRef);
@@ -544,8 +549,8 @@ public class Core implements CoreObserver {
 			AccountLedgerEntry creditorLedgerEntryPE2 = PastEntryFactory.createAccountLedgerEntryPE2(creditorLedgerEntryPE1,
 					debitorFBMEntry.getId(), debitorLedgerEntry.getId(), "Debitor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());	
 			//debitorFACreditorPE2
-			FAMEntry debitorFACreditorPE2 = PastEntryFactory.createFAMEntryPE2(debitorFACreditorPE1, comment, 
-					degreeOfSatisfaction, debitorFBMEntry.getId(), "Debitor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
+			FAMEntry debitorFACreditorPE2 = PastEntryFactory.createFAMEntryPE2(debitorFACreditorPE1, debitorFBMEntry.getComment(), 
+					debitorFBMEntry.getNumericalDegreeOfSatisfactionWithService(), debitorFBMEntry.getId(), "Debitor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 			//creditorFBMEntryPE2
 			FBMEntry creditorFBMEntryPE2 = PastEntryFactory.createFBMEntryPE2(creditorFBMEntryPE1, 
 					creditorFADebitor.getId(), p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
@@ -565,7 +570,23 @@ public class Core implements CoreObserver {
 			Notification notificationPhase3 = new NotificationPaymentPhase3(p2pLayer.getNode().getId(), transRef, creditorLedgerEntryPE2.getId(), debitorFACreditorPE2.getId(), creditorFBMEntryPE2.getId());
 			
 			//The entries hashes are sent as Notification objects to the creditor
-			messenger.sendNotification(null, notificationPhase3);
+			LeafSet leafSet = p2pLayer.getNode().getLeafSet();
+			
+			for (int i = 0; i <= leafSet.ccwSize(); i++){
+		      if (i != 0) { //Para no enviarse el mensaje a si mismo
+		    	//Recuperamos el NodeHandler del nodo vecino i. Contiene informacion del nodo.
+		        NodeHandle nh = leafSet.get(i);
+		        
+		        messenger.sendNotification(nh, notificationPhase3);
+		        
+		        try {
+					Thread.sleep(400);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+		      }
+		    }
+			
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
 		} catch (NodeNotInitializedException e) {
@@ -580,9 +601,9 @@ public class Core implements CoreObserver {
 		p2pLayer.put(debitorLedgerEntry, "debitorLedgerEntry", FileType.ACCOUNT_LEDGER_ENTRY);
 		p2pLayer.put(creditorFADebitor, "creditorFADebitor", FileType.FAM_ENTRY);
 		p2pLayer.put(debitorFBMEntry, "debitorFBMEntry", FileType.FBM_ENTRY);
-		p2pLayer.put(creditorLedgerEntryPE2, "creditorLedgerEntryPE1", FileType.ACCOUNT_LEDGER_ENTRY);
-		p2pLayer.put(debitorFACreditorPE2, "debitorFACreditorPE1", FileType.FAM_ENTRY);
-		p2pLayer.put(creditorFBMEntryPE2, "creditorFBMEntryPE1", FileType.FBM_ENTRY);
+		p2pLayer.put(creditorLedgerEntryPE2, "creditorLedgerEntryPE2", FileType.ACCOUNT_LEDGER_ENTRY);
+		p2pLayer.put(debitorFACreditorPE2, "debitorFACreditorPE2", FileType.FAM_ENTRY);
+		p2pLayer.put(creditorFBMEntryPE2, "creditorFBMEntryPE2", FileType.FBM_ENTRY);
 	}
 	
 	public void paymentProtocolCreditorPhase3(String notificationRef){
@@ -599,7 +620,12 @@ public class Core implements CoreObserver {
 			p2pLayer.get(notificationPhase3.getCreditorFBMPE2(), "", FileType.FBM_ENTRY);
 						
 			//Wait until the three files are successfully loaded
-			//wait()
+			
+
+			loadAccountLedgerSemaphore.acquire();
+			loadFAMSemaphore.acquire();
+			loadFBMSemaphore.acquire();
+			
 			AccountLedgerEntry creditorLedgerEntryPE2 = (AccountLedgerEntry) loadedDHTEntries.get(notificationPhase3.getCreditorLedgerPE2());
 			FBMEntry creditorFBMEntryPE2 = (FBMEntry) loadedDHTEntries.get(notificationPhase3.getCreditorFBMPE2());
 			FAMEntry debitorFACreditorPE2 = (FAMEntry) loadedDHTEntries.get(notificationPhase3.getDebitorFACreditorPE2());
@@ -608,6 +634,9 @@ public class Core implements CoreObserver {
 			entryValidator.validatePaymentPhase3();
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	

@@ -14,22 +14,21 @@ import javax.swing.border.EmptyBorder;
 
 import timebank.control.Controller;
 
-public class NewlyStartedPayment extends JDialog {
+public class StartPaymentPhase3Confirmation extends JDialog {
 
 	private final JPanel contentPanel = new JPanel();
-
-	private Controller c;
-	private String notificationRef;
-	private String transactionRef;
 	
-	public NewlyStartedPayment(Controller c, String notRef, String transRef){
+	private Controller c;
+	private String notRef;
+	private String transRef;
+	
+	public StartPaymentPhase3Confirmation(Controller c, String notRef, String transRef) {
 		this.c = c;
-		this.notificationRef = notRef;
-		this.transactionRef = transRef;
+		this.notRef = notRef;
+		this.transRef = transRef;
 		
 		initGUI();
 	}
-	
 	public void initGUI() {
 		setBounds(100, 100, 450, 300);
 		getContentPane().setLayout(new BorderLayout());
@@ -38,28 +37,29 @@ public class NewlyStartedPayment extends JDialog {
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		
 		contentPanel.add(new JLabel("You have a new notification:"));
-		contentPanel.add(new JLabel("Do you want to validate and start the second phase of this payment?"));
-		contentPanel.add(new JLabel("Notification reference: " + notificationRef));
-		contentPanel.add(new JLabel("This notification refers to the transaction: " + transactionRef));
+		contentPanel.add(new JLabel("Do you want to validate and start the third phase of this payment?"));
+		contentPanel.add(new JLabel("Notification reference: " + notRef));		
+		contentPanel.add(new JLabel("This notification refers to the transaction: " + transRef));
 
+		
 		JPanel buttonPane = new JPanel();
 		buttonPane.setLayout(new FlowLayout(FlowLayout.RIGHT));
 		getContentPane().add(buttonPane, BorderLayout.SOUTH);
-	
+		
 		JButton okButton = new JButton("OK");
-		buttonPane.add(okButton);
-		getRootPane().setDefaultButton(okButton);
+		okButton.setActionCommand("OK");
 		okButton.addActionListener(new ActionListener() {
 			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				c.creditorPaymentPhase1(notificationRef);
+				c.debitorPaymentPhase2(notRef);
 				dispose();
 			}
 		});
+		buttonPane.add(okButton);
 	
 		JButton cancelButton = new JButton("Cancel");
-		buttonPane.add(cancelButton);
+		cancelButton.setActionCommand("Cancel");
 		cancelButton.addActionListener(new ActionListener() {
 			
 			@Override
@@ -67,6 +67,7 @@ public class NewlyStartedPayment extends JDialog {
 				dispose();
 			}
 		});
+		buttonPane.add(cancelButton);
 	
 		setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		setVisible(true);

@@ -284,7 +284,7 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	}
 
 	@Override
-	public void onNewlyStartedPayment(String notRef, String transRef) {
+	public void onPaymentPhase1Started(String notRef, String transRef) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				//Las cosas que se preguntaran aqui son si el Creditor desea validar ahora o no
@@ -296,7 +296,7 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	}
 
 	@Override
-	public void onPhase1ValidationSuccess(String notificationRef) {
+	public void onPaymentPhase1ValidationSuccess(String notificationRef) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				//Notificar que la validacion de los ficheros de la primera fase son correctos
@@ -305,6 +305,25 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 				new FeedbackInput(c, notificationRef, true);
 			}
 		});	
+	}
+
+	@Override
+	public void onPaymentPhase2Started(String notRef, String transRef) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				new StartPaymentPhase3Confirmation(c, notRef, transRef);
+			}
+		});
+	}
+	
+	@Override
+	public void onPaymentPhase2ValidationSuccess(String notificationRef) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				logTextPane.setText(logTextPane.getText() + "Validacion fase 2 exitosa\n");
+				c.debitorPaymentPhase3(notificationRef);
+			}
+		});
 	}
 
 }
