@@ -632,6 +632,8 @@ public class Core implements CoreObserver {
 			
 			//Creditor validates these files. An error is returned if one or more files are not well formed
 			entryValidator.validatePaymentPhase3();
+			
+			guiObserver.onPaymentPhase3ValidationSuccess(notificationRef);
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
 		} catch (InterruptedException e) {

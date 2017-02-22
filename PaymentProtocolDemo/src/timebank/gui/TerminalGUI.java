@@ -198,4 +198,16 @@ public class TerminalGUI implements GUIObserver {
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public void onPaymentPhase3ValidationSuccess(String notificationRef) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onPaymentPhase3Started(String notRef, String transRef) {
+		// TODO Auto-generated method stub
+		
+	}
 }

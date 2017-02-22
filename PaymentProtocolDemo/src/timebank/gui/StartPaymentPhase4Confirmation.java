@@ -14,21 +14,22 @@ import javax.swing.border.EmptyBorder;
 
 import timebank.control.Controller;
 
-public class StartPaymentPhase3Confirmation extends JDialog {
+public class StartPaymentPhase4Confirmation extends JDialog {
 
 	private final JPanel contentPanel = new JPanel();
-	
+		
 	private Controller c;
 	private String notRef;
 	private String transRef;
 	
-	public StartPaymentPhase3Confirmation(Controller c, String notRef, String transRef) {
+	public StartPaymentPhase4Confirmation(Controller c, String notRef, String transRef){
 		this.c = c;
 		this.notRef = notRef;
 		this.transRef = transRef;
 		
 		initGUI();
 	}
+	
 	public void initGUI() {
 		setBounds(100, 100, 450, 300);
 		getContentPane().setLayout(new BorderLayout());
@@ -37,7 +38,7 @@ public class StartPaymentPhase3Confirmation extends JDialog {
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		
 		contentPanel.add(new JLabel("You have a new notification:"));
-		contentPanel.add(new JLabel("Do you want to validate the previous phase and start the third phase of this payment?"));
+		contentPanel.add(new JLabel("Do you want to validate the previous phase and start the fourth phase of this payment?"));
 		contentPanel.add(new JLabel("Notification reference: " + notRef));		
 		contentPanel.add(new JLabel("This notification refers to the transaction: " + transRef));
 
@@ -49,19 +50,18 @@ public class StartPaymentPhase3Confirmation extends JDialog {
 		JButton okButton = new JButton("OK");
 		okButton.setActionCommand("OK");
 		okButton.addActionListener(new ActionListener() {
-			
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				c.debitorPaymentPhase2(notRef);
-				dispose();
+				c.creditorPaymentPhase3(notRef);
 			}
 		});
 		buttonPane.add(okButton);
-	
+		getRootPane().setDefaultButton(okButton);
+		
+		
 		JButton cancelButton = new JButton("Cancel");
 		cancelButton.setActionCommand("Cancel");
 		cancelButton.addActionListener(new ActionListener() {
-			
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				dispose();

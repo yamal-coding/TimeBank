@@ -31,4 +31,8 @@ public interface GUIObserver {
 	public void onPaymentPhase2Started(String notRef, String transRef);
 	
 	public void onPaymentPhase2ValidationSuccess(String notificationRef);
+	
+	public void onPaymentPhase3Started(String notRef, String transRef);
+	
+	public void onPaymentPhase3ValidationSuccess(String notificationRef);
 }

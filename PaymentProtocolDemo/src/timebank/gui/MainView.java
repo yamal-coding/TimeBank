@@ -19,7 +19,6 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 
 import javax.swing.JScrollPane;
-import javax.swing.BoxLayout;
 import javax.swing.DefaultListModel;
 
 import java.awt.FlowLayout;
@@ -164,6 +163,10 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		this.setVisible(true);
 	}
 	
+	private void log(String msg){
+		logTextPane.setText(logTextPane.getText() + msg + "\n");
+	}
+	
 	@Override
 	public void actionPerformed(ActionEvent e) {
 		JButton b = (JButton) e.getSource();
@@ -182,7 +185,8 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	public void failedConnection() {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
-				logTextPane.setText(logTextPane.getText() + "Failed connection: internal error.\n");
+				log("Failed connection: internal error.");
+				//logTextPane.setText(logTextPane.getText() + "Failed connection: internal error.\n");
 			}
 		});
 	}
@@ -191,7 +195,8 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	public void onNoPendingTransactions() {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
-				logTextPane.setText(logTextPane.getText() + "There is not any transaction to load.\n");
+				log("There is not any transaction to load.");
+				//logTextPane.setText(logTextPane.getText() + "There is not any transaction to load.\n");
 			}
 		});
 	}
@@ -202,7 +207,8 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 			public void run(){
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run(){
-						logTextPane.setText(logTextPane.getText() + "New notification received: " + notification + "\n");
+						log("New notification received: " + notification);
+						//logTextPane.setText(logTextPane.getText() + "New notification received: " + notification + "\n");
 						notificationsListModel.addElement(notification);
 					}
 				});
@@ -214,7 +220,8 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	public void onNodeAlreadyConnected() {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
-				logTextPane.setText(logTextPane.getText() + "Failed connection: Node already connected.\n");
+				log("Failed connection: Node already connected.");
+				//logTextPane.setText(logTextPane.getText() + "Failed connection: Node already connected.\n");
 			}
 		});
 	}
@@ -243,7 +250,8 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	public void onTransactionLoaded(String transref) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
-				logTextPane.setText(logTextPane.getText() + "Bill " + transref + " loaded.\n");
+				log("Bill " + transref + " loaded.");
+				//logTextPane.setText(logTextPane.getText() + "Bill " + transref + " loaded.\n");
 				transactionsListModel.addElement(transref);
 			}
 		});
@@ -253,7 +261,8 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	public void onFailedPublicProfileLoad() {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
-				logTextPane.setText(logTextPane.getText() + "Public profile falied load.\n");
+				log("Public profile falied load.");
+				//logTextPane.setText(logTextPane.getText() + "Public profile falied load.\n");
 			}
 		});
 	}
@@ -268,7 +277,8 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	public void onSuccesfulConnection() {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
-				logTextPane.setText(logTextPane.getText() + "Succesful connection.\n");
+				log("Succesful connection.");
+				//logTextPane.setText(logTextPane.getText() + "Succesful connection.\n");
 			}
 		});
 	}
@@ -278,7 +288,8 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	public void onLogMessage(String msg) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
-				logTextPane.setText(logTextPane.getText() + msg + "\n");
+				log(msg);
+				//logTextPane.setText(logTextPane.getText() + msg + "\n");
 			}
 		});
 	}
@@ -301,7 +312,8 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 			public void run(){
 				//Notificar que la validacion de los ficheros de la primera fase son correctos
 				//y pedir el feedback y enviarlo para empezar la segunda fase por parte del creditor
-				logTextPane.setText(logTextPane.getText() + "Validacion fase 1 exitosa\n");
+				log("Phase 1 validation success.");
+				//logTextPane.setText(logTextPane.getText() + "Validacion fase 1 exitosa\n");
 				new FeedbackInput(c, notificationRef, true);
 			}
 		});	
@@ -320,10 +332,30 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	public void onPaymentPhase2ValidationSuccess(String notificationRef) {
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
-				logTextPane.setText(logTextPane.getText() + "Validacion fase 2 exitosa\n");
+				log("Phase 2 validation success.");
+				//logTextPane.setText(logTextPane.getText() + "Validacion fase 2 exitosa\n");
 				c.debitorPaymentPhase3(notificationRef);
 			}
 		});
 	}
-
+	
+	@Override
+	public void onPaymentPhase3Started(String notRef, String transRef) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				new StartPaymentPhase4Confirmation(c, notRef, transRef);
+			}
+		});
+	}
+	
+	@Override
+	public void onPaymentPhase3ValidationSuccess(String notificationRef) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				log("Phase 3 validation success.");
+				//logTextPane.setText(logTextPane.getText() + "Validacion fase 3 exitosa\n");
+				c.creditorPaymentPhase4(notificationRef);
+			}
+		});
+	}
 }
