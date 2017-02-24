@@ -3,6 +3,11 @@ package timebank.model.messaging;
 import rice.p2p.commonapi.Id;
 import timebank.observer.GUIObserver;
 
+/**
+ * A first payment phase notification
+ * @author yamal
+ *
+ */
 public class NotificationPaymentPhase1 extends NotificationPayment {
 	
 	private Id debitorLedgerPE1;
@@ -23,20 +28,32 @@ public class NotificationPaymentPhase1 extends NotificationPayment {
 	}
 	
 	public void handleNotification(GUIObserver observer){
-		//Esta notificacion se recibe en la primera fase del pago siendo un Creditor,
-		//por lo que hay que decir en la vista que el debitor X ha iniciado el pago y preguntar
-		//si el Creditor desea proceder con la siguiente fase del pago
+		//This notification is shown to the Creditor of a payment process,
+		//and it has to indicate to the user that the payment has been started by the debtor
+		//and then ask him if he wants to proceed with the next payment phase (second phase)
 		observer.onPaymentPhase1Started(notificationRef, transRef);
 	}
 
+	/**
+	 * 
+	 * @return debitorLedgerPE1Hash
+	 */
 	public Id getDebitorLedgerPE1Hash() {
 		return debitorLedgerPE1;
 	}
-
+	
+	/**
+	 * 
+	 * @return creditorFADebitorPE1Hash
+	 */
 	public Id getCreditorFADebitorPE1Hash() {
 		return creditorFADebitorPE1;
 	}
 
+	/**
+	 * 
+	 * @return debitorFBMPE1Hash
+	 */
 	public Id getDebitorFBMPE1Hash() {
 		return debitorFBMPE1;
 	}

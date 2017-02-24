@@ -53,6 +53,7 @@ public class StartPaymentPhase4Confirmation extends JDialog {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				c.creditorPaymentPhase3(notRef);
+				dispose();
 			}
 		});
 		buttonPane.add(okButton);

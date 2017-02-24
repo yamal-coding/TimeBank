@@ -7,7 +7,22 @@ import rice.pastry.commonapi.PastryIdFactory;
 import timebank.model.files.network.persistent.EntryType;
 import timebank.model.files.network.persistent.FileType;
 
+/**
+ * Class with some useful methods
+ * @author yamal
+ *
+ */
 public class Util {
+	/**
+	 * This method is called to generate a specific DHTHash. It can create DHTHashes for partial and final entries
+	 * @param idFactory
+	 * @param uuid
+	 * @param numEntry
+	 * @param transRef
+	 * @param fileType
+	 * @param entryType
+	 * @return
+	 */
 	public static Id makeDHTHash(PastryIdFactory idFactory, UUID uuid, int numEntry, String transRef, FileType fileType, EntryType entryType){
 		Id ret;
 		switch(fileType){

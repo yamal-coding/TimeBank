@@ -55,12 +55,12 @@ public class Core implements CoreObserver {
 	private PublicProfile publicProfile;
 	
 	//User's bills
-	private /*volatile*/ Map<String, Bill> loadedBills;
-	private /*volatile*/ int billsToload;
-	private /*volatile*/ int loadBillTrials;
+	private Map<String, Bill> loadedBills;
+	private int billsToload;
+	private int loadBillTrials;
 	
 	//Entries loaded from DHT. They will be removed from the hash map when used
-	private /*volatile*/ Map<Id, DHTEntry> loadedDHTEntries;
+	private Map<Id, DHTEntry> loadedDHTEntries;
 	
 	//these boolean values indicate if it is necessary to load one more DHT entry
 	private AccountLedgerEntry lastLedger;
@@ -117,12 +117,19 @@ public class Core implements CoreObserver {
 		this.guiObserver = obs;
 	}
 	
+	/**
+	 * Method called when a transaction is selected in the GUI to view its details
+	 * @param ref Transaction reference
+	 */
 	public void viewTransaction(String ref){
 		Bill bill = loadedBills.get(ref);
 		boolean isCreditor = bill.getSelf_profile_DHTHash().equals(publicProfile.getId()); 
 		guiObserver.onViewTransaction(ref, bill.getActualServiceHours(), isCreditor);
 	}
 	
+	/**
+	 * Method called when the user wants to view his public profile information
+	 */
 	public void viewPublicProfile(){
 		//TODO Hay que comprobar primero que el nodo esta conectado para no enviar un publicProfile nulo
 		//y notificar en caso de error
@@ -133,6 +140,10 @@ public class Core implements CoreObserver {
 			guiObserver.onViewPublicProfile(publicProfile.getSelf_firstName(), publicProfile.getSelf_surnames());
 	}
 	
+	/**
+	 * When a notification is selected in the GUI, each type of notification calls its own handleNotification method
+	 * @param ref
+	 */
 	public void handleNotification(String ref){
 		try {
 			messenger.getNotification(ref).handleNotification(guiObserver);
@@ -249,6 +260,7 @@ public class Core implements CoreObserver {
 				(lastFBM == null) ? null : lastFBM.getId(), self_ledgerEntry_DHTHash, comment, degreeOfStisfaction, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 		
 		//store the corresponding entries into DHT
+		//Notify when p2pLayer notifies to this class the successful storage
 		storeFilesDebitorPaymentProtocolPhase1(debitorLedgerEntryPE1, creditorFADebitorPE1, debitorFBMEntryPE1);
 		
 		if (lastLedger != null)
@@ -259,33 +271,13 @@ public class Core implements CoreObserver {
 			loadedDHTEntries.remove(lastFBM.getId());
 		
 		//the hashes and ids of the entries are sent as Notification objects to the creditor
-		//Notify when p2pLayer notifies to this class the successful storage
-		
 		try {
 			Notification notificationPhase1 = new NotificationPaymentPhase1(p2pLayer.getNode().getId(), transRef,
 					debitorLedgerEntryPE1.getId(), creditorFADebitorPE1.getId(), debitorFBMEntryPE1.getId());
 			
-			LeafSet leafSet = p2pLayer.getNode().getLeafSet();
-			
-			
-			for (int i = 0; i <= leafSet.ccwSize(); i++){
-		      if (i != 0) { //Para no enviarse el mensaje a si mismo
-		    	//Recuperamos el NodeHandler del nodo vecino i. Contiene informacion del nodo.
-		        NodeHandle nh = leafSet.get(i);
-		        
-		        messenger.sendNotification(nh, notificationPhase1);
-		        
-		        try {
-					Thread.sleep(400);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-		      }
-		    }
+			sendNotification(notificationPhase1);
 		} catch (NodeNotInitializedException e) {
 			// TODO
-			
-			//NOTIFY THE ERROR OF THE OPERATION
 		}
 	}
 	
@@ -297,22 +289,19 @@ public class Core implements CoreObserver {
 	}
 
 	/**
-	 * The creditor starts his corresponding payment phase with a reference of a notification received
+	 * The creditor receives a notification from debtor with the DHTHashes of the three first partial entries and now the creditor
+	 * must validate them
 	 * @param notificationRef
 	 */
 	public void paymentProtocolCreditorPhase1(String notificationRef){
-		//TODO
-		
 		try {
 			NotificationPaymentPhase1 notificationPhase1 = (NotificationPaymentPhase1) messenger.getNotification(notificationRef);
 			
 			//With the NotificationPairs (id and hash) received from debtor, the creditor loads
 			//the corresponding files
-			p2pLayer.get(notificationPhase1.getDebitorLedgerPE1Hash(), "", FileType.ACCOUNT_LEDGER_ENTRY);
-			p2pLayer.get(notificationPhase1.getCreditorFADebitorPE1Hash(), "", FileType.FAM_ENTRY);
-			p2pLayer.get(notificationPhase1.getDebitorFBMPE1Hash(), "", FileType.FBM_ENTRY);
-			
-			//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
+			p2pLayer.get(notificationPhase1.getDebitorLedgerPE1Hash(), "debitorLedgerPE1", FileType.ACCOUNT_LEDGER_ENTRY);
+			p2pLayer.get(notificationPhase1.getCreditorFADebitorPE1Hash(), "creditorFADebitorPE1", FileType.FAM_ENTRY);
+			p2pLayer.get(notificationPhase1.getDebitorFBMPE1Hash(), "debitorFBMPE1", FileType.FBM_ENTRY);
 			
 			//Wait until the three files are successfully loaded
 			loadAccountLedgerSemaphore.acquire();
@@ -322,7 +311,9 @@ public class Core implements CoreObserver {
 			AccountLedgerEntry debitorLedgerEntryPE1 = (AccountLedgerEntry) loadedDHTEntries.get(notificationPhase1.getDebitorLedgerPE1Hash());
 			FAMEntry creditorFADebitorPE1 = (FAMEntry) loadedDHTEntries.get(notificationPhase1.getCreditorFADebitorPE1Hash());
 			FBMEntry debitorFBMEntryPE1 = (FBMEntry) loadedDHTEntries.get(notificationPhase1.getDebitorFBMPE1Hash());
+			
 			//Creditor validates these files. An error is returned if one or more files are not well formed
+			//TODO
 			entryValidator.validatePaymentPhase1();
 		
 			guiObserver.onPaymentPhase1ValidationSuccess(notificationRef);
@@ -335,12 +326,15 @@ public class Core implements CoreObserver {
 		}
 	}
 	
+	/**
+	 * Once the three first partial entries have been validated the creditor has to continue with the second payment phase
+	 * @param notificationRef
+	 * @param comment
+	 * @param degreeOfSatisfaction
+	 */
 	public void paymentProtocolCreditorPhase2(String notificationRef, String comment, int degreeOfSatisfaction){
-		//TODO
-		
 		try {
 			NotificationPaymentPhase1 notificationPhase1 = (NotificationPaymentPhase1) messenger.getNotification(notificationRef);
-			
 			String transRef = notificationPhase1.getTransactionReference();
 			
 			//Creditor loads from DHT the bill associated to the current payment
@@ -362,40 +356,34 @@ public class Core implements CoreObserver {
 			//self_previous_FAMEntry_DHTHash
 			loadLastFBMEntry();
 			
-			//With bill information creates the next partial entries
-			//creditorLedgerPE1
+			//With bill information, the creditor creates the next partial entries
 			AccountLedgerEntry creditorLedgerEntryPE1 = PastEntryFactory.createAccountLedgerEntryPE1(bill, 
 					(lastLedger == null) ? 1 : lastLedger.getLedgerEntryNum(), (lastLedger == null) ? 0 : lastLedger.getBalance(), (lastLedger == null) ? null :lastLedger.getId(), 
 					(lastFBM == null) ? 1 :lastFBM.getFBMEntryNum(), true, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 			
-			//Common field to debitorFACReditorPE1 and creditorFBMEntryPE1
-			//This hash is directly calculated at this point because files in FreePastry are not mutable
+			//The creditorLedgerEntry hash is a common field to debitorFACReditorPE1 and creditorFBMEntryPE1
+			//and is directly calculated at this point because files in FreePastry are not mutable
 			Id creditor_ledgerEntry_DHTHash = Util.makeDHTHash(p2pLayer.getPastryIdFactory(), privateProfile.getUUID(), 
 					creditorLedgerEntryPE1.getLedgerEntryNum(), null, FileType.ACCOUNT_LEDGER_ENTRY, EntryType.FINAL_ENTRY);
-			
-			//debitorFACreditorPE1
+
 			FAMEntry debitorFACreditorPE1 = PastEntryFactory.createFAMEntryPE1((lastFAM == null) ? 1 :lastFAM.getFAMEntryNum(), 
 					(lastFAM == null) ? null :lastFAM.getId(), creditor_ledgerEntry_DHTHash, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 			
-			//creditorFBMPE1
 			FBMEntry creditorFBMEntryPE1 = PastEntryFactory.createFBMEntryPE1((lastFBM == null) ? 1 :lastFBM.getFBMEntryNum(), 
 					(lastFBM == null) ? null :lastFBM.getId(), creditor_ledgerEntry_DHTHash, comment, degreeOfSatisfaction, p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 			
 			//With the three files loaded previously the next partial entries are created
-			//debitorLedgerPE2
 			AccountLedgerEntry debitorLedgerEntryPE1 = (AccountLedgerEntry) loadedDHTEntries.get(notificationPhase1.getDebitorLedgerPE1Hash());
 			AccountLedgerEntry debitorLedgerEntryPE2 = PastEntryFactory.createAccountLedgerEntryPE2(debitorLedgerEntryPE1, 
 							creditorLedgerEntryPE1.getSelf_FBMEntry_DHTHash(), creditor_ledgerEntry_DHTHash, 
 							"Creditor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 			
-			//creditorFADebitorPE2
 			FAMEntry creditorFADebitorPE1 = (FAMEntry) loadedDHTEntries.get(notificationPhase1.getCreditorFADebitorPE1Hash());
 			FAMEntry creditorFADebitorPE2 = PastEntryFactory.createFAMEntryPE2(creditorFADebitorPE1, 
 					comment, degreeOfSatisfaction, creditorLedgerEntryPE1.getSelf_FBMEntry_DHTHash(), 
 					"Creditor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 			
 			
-			//debitorFBEntryPE2
 			//The creditor must create at this moment the hash of his FAMEntry
 			Id debitorFACreditor_FinalDHTHash = Util.makeDHTHash(p2pLayer.getPastryIdFactory(), privateProfile.getUUID(), debitorFACreditorPE1.getFAMEntryNum(), 
 					transRef, FileType.FAM_ENTRY, EntryType.FINAL_ENTRY);
@@ -410,16 +398,16 @@ public class Core implements CoreObserver {
 			loadedDHTEntries.remove(notificationPhase1.getCreditorFADebitorPE1Hash());
 			loadedDHTEntries.remove(notificationPhase1.getDebitorFBMPE1Hash());
 			
+			//store the corresponding entries into DHT
+			storeFilesCreditorPaymentProtocolPhase2(creditorLedgerEntryPE1, debitorFACreditorPE1, creditorFBMEntryPE1,
+					debitorLedgerEntryPE2, creditorFADebitorPE2, debitorFBMEntryPE2);
+			
 			if (lastLedger != null)
 				loadedDHTEntries.remove(lastLedger.getId());
 			if (lastFAM != null)
 				loadedDHTEntries.remove(lastFAM.getId());
 			if (lastFBM != null)
 				loadedDHTEntries.remove(lastFBM.getId());
-			
-			//store the corresponding entries into DHT
-			storeFilesCreditorPaymentProtocolPhase2(creditorLedgerEntryPE1, debitorFACreditorPE1, creditorFBMEntryPE1,
-					debitorLedgerEntryPE2, creditorFADebitorPE2, debitorFBMEntryPE2);
 			
 			//Notify when p2pLayer notifies to this class the successful storage
 			//wait();
@@ -429,22 +417,7 @@ public class Core implements CoreObserver {
 					creditorLedgerEntryPE1.getId(), debitorFACreditorPE1.getId(), creditorFBMEntryPE1.getId(),
 					debitorLedgerEntryPE2.getId(), creditorFADebitorPE2.getId(), debitorFBMEntryPE2.getId());
 			
-			LeafSet leafSet = p2pLayer.getNode().getLeafSet();
-			
-			for (int i = 0; i <= leafSet.ccwSize(); i++){
-		      if (i != 0) { //Para no enviarse el mensaje a si mismo
-		    	//Recuperamos el NodeHandler del nodo vecino i. Contiene informacion del nodo.
-		        NodeHandle nh = leafSet.get(i);
-		        
-		        messenger.sendNotification(nh, notificationPhase2);
-		        
-		        try {
-					Thread.sleep(400);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-		      }
-		    }
+			sendNotification(notificationPhase2);
 			
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
@@ -466,28 +439,27 @@ public class Core implements CoreObserver {
 		p2pLayer.put(debitorFBMEntryPE2, "debitorFBMEntryPE2", FileType.FBM_ENTRY);
 	}
 	
+	/**
+	 * The debtor receives a notification from creditor with the DHTHashes of the six second partial entries and now the debtor
+	 * must validate them
+	 * @param notificationRef
+	 */
 	public void paymentProtocolDebitorPhase2(String notificationRef){
-		//TODO
 		try {
 			NotificationPaymentPhase2 notificationPhase2 = (NotificationPaymentPhase2) messenger.getNotification(notificationRef);
-		
-			//With the Notification received from creditor, the debtor loads
-			//the corresponding files
 			
-			//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE
-			
-			p2pLayer.get(notificationPhase2.getCreditorLedgerPE1Hash(), "", FileType.ACCOUNT_LEDGER_ENTRY);
-			p2pLayer.get(notificationPhase2.getDebitorFACreditorPE1Hash(), "", FileType.FAM_ENTRY);
-			p2pLayer.get(notificationPhase2.getCreditorFBMPE1Hash(), "", FileType.FBM_ENTRY);
-			p2pLayer.get(notificationPhase2.getDebitorLedgerPE2Hash(), "", FileType.ACCOUNT_LEDGER_ENTRY);
-			p2pLayer.get(notificationPhase2.getCreditorFADebitorPE2Hash(), "", FileType.FAM_ENTRY);
-			p2pLayer.get(notificationPhase2.getDebitorFBMPE2Hash(), "", FileType.FBM_ENTRY);
+			//With the Notification received from creditor, the debtor loads the corresponding files
+			p2pLayer.get(notificationPhase2.getCreditorLedgerPE1Hash(), "creditorLedgerPE1", FileType.ACCOUNT_LEDGER_ENTRY);
+			p2pLayer.get(notificationPhase2.getDebitorFACreditorPE1Hash(), "debitorFACreditorPE1", FileType.FAM_ENTRY);
+			p2pLayer.get(notificationPhase2.getCreditorFBMPE1Hash(), "creditorFBMPE1", FileType.FBM_ENTRY);
+			p2pLayer.get(notificationPhase2.getDebitorLedgerPE2Hash(), "debitorLedgerPE2", FileType.ACCOUNT_LEDGER_ENTRY);
+			p2pLayer.get(notificationPhase2.getCreditorFADebitorPE2Hash(), "creditorFADebitorPE2", FileType.FAM_ENTRY);
+			p2pLayer.get(notificationPhase2.getDebitorFBMPE2Hash(), "debitorFBMPE2", FileType.FBM_ENTRY);
 			
 			//Wait until the three files are successfully loaded
 			loadAccountLedgerSemaphore.acquire();
 			loadFAMSemaphore.acquire();
 			loadFBMSemaphore.acquire();
-
 			loadAccountLedgerSemaphore.acquire();
 			loadFAMSemaphore.acquire();
 			loadFBMSemaphore.acquire();
@@ -495,12 +467,12 @@ public class Core implements CoreObserver {
 			AccountLedgerEntry debitorLedgerEntryPE2 = (AccountLedgerEntry) loadedDHTEntries.get(notificationPhase2.getDebitorLedgerPE2Hash());
 			FBMEntry debitorFBMEntryPE2 = (FBMEntry) loadedDHTEntries.get(notificationPhase2.getDebitorFBMPE2Hash());
 			FAMEntry creditorFADebitorPE2 = (FAMEntry) loadedDHTEntries.get(notificationPhase2.getCreditorFADebitorPE2Hash());
-			
 			AccountLedgerEntry creditorLedgerEntryPE1 = (AccountLedgerEntry) loadedDHTEntries.get(notificationPhase2.getCreditorLedgerPE1Hash());
 			FBMEntry creditorFBMEntryPE1 = (FBMEntry) loadedDHTEntries.get(notificationPhase2.getCreditorFBMPE1Hash());
 			FAMEntry debitorFACreditorPE1 = (FAMEntry) loadedDHTEntries.get(notificationPhase2.getDebitorFACreditorPE1Hash());
 			
 			//Creditor validates these files. An error is returned if one or more files are not well formed
+			//TODO
 			entryValidator.validatePaymentPhase2();
 			
 			guiObserver.onPaymentPhase2ValidationSuccess(notificationRef);
@@ -512,11 +484,14 @@ public class Core implements CoreObserver {
 			e.printStackTrace();
 		}
 	}
-	
+
+	/**
+	 * Once the six second partial entries have been validated the debtor has to continue with the third payment phase
+	 * @param notificationRef
+	 */
 	public void paymentProtocolDebitorPhase3(String notificationRef){
-		NotificationPaymentPhase2 notificationPhase2;
 		try {
-			notificationPhase2 = (NotificationPaymentPhase2) messenger.getNotification(notificationRef);
+			NotificationPaymentPhase2 notificationPhase2 = (NotificationPaymentPhase2) messenger.getNotification(notificationRef);
 		
 			String transRef= notificationPhase2.getTransactionReference();
 			
@@ -530,28 +505,24 @@ public class Core implements CoreObserver {
 			
 			//With the three debtor corresponding partial entries, the next three final entries are created:
 			
-			//debitorLedger
 			//The hash of this final entry has been calculated previously and it is stored in the FBMENtry of the debtor
 			AccountLedgerEntry debitorLedgerEntry = PastEntryFactory.createFinalAccountLedgerEntry(
 					debitorLedgerEntryPE2, debitorFBMEntryPE2.getSelf_ledgerEntry_DHTHash(), "Debtor digital signature");
 			
-			//creditorFADebitor
 			Id creditorFADebitor_FinalDHTHash = Util.makeDHTHash(p2pLayer.getPastryIdFactory(), 
 					privateProfile.getUUID(), creditorFADebitorPE2.getFAMEntryNum(), transRef, FileType.FAM_ENTRY, EntryType.FINAL_ENTRY);
 			FAMEntry creditorFADebitor = PastEntryFactory.createFinalFAMEntry(creditorFADebitorPE2, 
 					creditorFADebitor_FinalDHTHash, "Debtor digital signature");
 			
-			//debitorFBEntry
 			FBMEntry debitorFBMEntry = PastEntryFactory.createFinalFBMEntry(debitorFBMEntryPE2, debitorLedgerEntry.getSelf_FBMEntry_DHTHash(), "Debtor digital signature");
 			
 			//The debtor create the next partial entries with the other three partial entries loaded
-			//creditorLedgerEntryPE2
 			AccountLedgerEntry creditorLedgerEntryPE2 = PastEntryFactory.createAccountLedgerEntryPE2(creditorLedgerEntryPE1,
 					debitorFBMEntry.getId(), debitorLedgerEntry.getId(), "Debitor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());	
-			//debitorFACreditorPE2
+			
 			FAMEntry debitorFACreditorPE2 = PastEntryFactory.createFAMEntryPE2(debitorFACreditorPE1, debitorFBMEntry.getComment(), 
 					debitorFBMEntry.getNumericalDegreeOfSatisfactionWithService(), debitorFBMEntry.getId(), "Debitor digital signature", p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
-			//creditorFBMEntryPE2
+			
 			FBMEntry creditorFBMEntryPE2 = PastEntryFactory.createFBMEntryPE2(creditorFBMEntryPE1, 
 					creditorFADebitor.getId(), p2pLayer.getPastryIdFactory(), privateProfile.getUUID());
 			
@@ -570,22 +541,7 @@ public class Core implements CoreObserver {
 			Notification notificationPhase3 = new NotificationPaymentPhase3(p2pLayer.getNode().getId(), transRef, creditorLedgerEntryPE2.getId(), debitorFACreditorPE2.getId(), creditorFBMEntryPE2.getId());
 			
 			//The entries hashes are sent as Notification objects to the creditor
-			LeafSet leafSet = p2pLayer.getNode().getLeafSet();
-			
-			for (int i = 0; i <= leafSet.ccwSize(); i++){
-		      if (i != 0) { //Para no enviarse el mensaje a si mismo
-		    	//Recuperamos el NodeHandler del nodo vecino i. Contiene informacion del nodo.
-		        NodeHandle nh = leafSet.get(i);
-		        
-		        messenger.sendNotification(nh, notificationPhase3);
-		        
-		        try {
-					Thread.sleep(400);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-		      }
-		    }
+			sendNotification(notificationPhase3);
 			
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
@@ -606,22 +562,21 @@ public class Core implements CoreObserver {
 		p2pLayer.put(creditorFBMEntryPE2, "creditorFBMEntryPE2", FileType.FBM_ENTRY);
 	}
 	
+	/**
+	 * The creditor receives a notification from debtor with the DHTHashes of his three last partial entries and now the creditor
+	 * must validate them
+	 * @param notificationRef
+	 */
 	public void paymentProtocolCreditorPhase3(String notificationRef){
 		try {
 			NotificationPaymentPhase3 notificationPhase3 = (NotificationPaymentPhase3) messenger.getNotification(notificationRef);
-		
-			//THE NEXT BLOCK OF COMMENTED CODE IS INCOMPLETE		
 			
-			//With the NotificationPairs (id and hash) received from debitor, the creditor loads
-			//the corresponding files
-			
-			p2pLayer.get(notificationPhase3.getCreditorLedgerPE2(), "", FileType.ACCOUNT_LEDGER_ENTRY);
-			p2pLayer.get(notificationPhase3.getDebitorFACreditorPE2(), "", FileType.FAM_ENTRY);
-			p2pLayer.get(notificationPhase3.getCreditorFBMPE2(), "", FileType.FBM_ENTRY);
+			//With the Notification received from debtor, the creditor loads the corresponding files
+			p2pLayer.get(notificationPhase3.getCreditorLedgerPE2(), "creditorLedgerPE2", FileType.ACCOUNT_LEDGER_ENTRY);
+			p2pLayer.get(notificationPhase3.getDebitorFACreditorPE2(), "debitorFACreditorPE2", FileType.FAM_ENTRY);
+			p2pLayer.get(notificationPhase3.getCreditorFBMPE2(), "creditorFBMPE2", FileType.FBM_ENTRY);
 						
 			//Wait until the three files are successfully loaded
-			
-
 			loadAccountLedgerSemaphore.acquire();
 			loadFAMSemaphore.acquire();
 			loadFBMSemaphore.acquire();
@@ -642,9 +597,11 @@ public class Core implements CoreObserver {
 		}
 	}
 	
+	/**
+	 * Once the three last partial entries have been validated the creditor has to continue with the last payment phase
+	 * @param notificationRef
+	 */
 	public void paymentProtocolCreditorPhase4(String notificationRef){
-		//TODO
-		
 		try {
 			NotificationPaymentPhase3 notificationPhase3 = (NotificationPaymentPhase3) messenger.getNotification(notificationRef);
 			
@@ -655,15 +612,13 @@ public class Core implements CoreObserver {
 			FAMEntry debitorFACreditorPE2 = (FAMEntry) loadedDHTEntries.get(notificationPhase3.getDebitorFACreditorPE2());
 					
 			//With the creditor corresponding three partial files the next final entries are created:
-			//creditorLedger
 			AccountLedgerEntry creditorLedgerEntry = PastEntryFactory.createFinalAccountLedgerEntry(
 					creditorLedgerEntryPE2, creditorFBMEntryPE2.getSelf_ledgerEntry_DHTHash(), "Creditor digital signature");
-			//debitorFACreditor
+			
 			Id debitorFACreditor_DHTHash = storedFAMEntryDHTHashes.get(transRef);
 			FAMEntry debitorFACreditor = PastEntryFactory.createFinalFAMEntry(debitorFACreditorPE2, debitorFACreditor_DHTHash, "Creditor digital signature");
 			storedFAMEntryDHTHashes.remove(transRef);
 			
-			//creditorFBEntry
 			FBMEntry creditorFBMEntry = PastEntryFactory.createFinalFBMEntry(creditorFBMEntryPE2, 
 					creditorLedgerEntry.getSelf_FBMEntry_DHTHash(), "Creditor digital signature");
 			
@@ -685,6 +640,31 @@ public class Core implements CoreObserver {
 		p2pLayer.put(creditorFAM, "debitorFADebitorEntry", FileType.FAM_ENTRY);
 	}
 	
+	/*
+	 * This private method sends a notification to a node
+	 */
+	private void sendNotification(Notification not) throws NodeNotInitializedException{
+		LeafSet leafSet = p2pLayer.getNode().getLeafSet();
+		
+		for (int i = 0; i <= leafSet.ccwSize(); i++){
+	      if (i != 0) {
+	        NodeHandle nh = leafSet.get(i);
+	        
+	        messenger.sendNotification(nh, not);
+	        
+	        try {
+				Thread.sleep(400);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+	      }
+	    }
+	}
+	
+	/*
+	 * This private method start the search of the last AccountLedgerEntry of an user
+	 * A boolean is set to true to indicate that the program has to keep looking for the next entry
+	 */
 	private void loadLastAccountLedgerEntry(){
 		this.loadMoreLedger = true;
 		
@@ -697,7 +677,11 @@ public class Core implements CoreObserver {
 			e.printStackTrace();
 		}
 	}
-
+	
+	/*
+	 * This private method start the search of the last FAMEntry of an user
+	 * A boolean is set to true to indicate that the program has to keep looking for the next entry
+	 */
 	private void loadLastFAMEntry(){
 		this.loadMoreFAM = true;
 		
@@ -711,6 +695,10 @@ public class Core implements CoreObserver {
 		}
 	}
 	
+	/*
+	 * This private method start the search of the last FBMEntry of an user
+	 * A boolean is set to true to indicate that the program has to keep looking for the next entry
+	 */
 	private void loadLastFBMEntry(){
 		loadMoreFBM = true;
 		p2pLayer.get(publicProfile.getSelf_first_FBMEntryDHTHash(), "firstFBMEntry", FileType.FBM_ENTRY);
@@ -723,15 +711,15 @@ public class Core implements CoreObserver {
 		}
 	}
 	
-	/**
-	 * This method calls p2p layer to look up the user public profile in DHT
+	/*
+	 * This method calls p2p layer to look up the user's public profile on the DHT
 	 */
 	private void loadPublicProfile(){
 		p2pLayer.get(privateProfile.getSelf_publicProfile_DHTHash(), "UserPublicProfile", FileType.PUBLIC_PROFILE_ENTRY);
 	}
 	
-	/**
-	 * This method loads the transactions of the current user. It does not returns any object because
+	/*
+	 * This method loads the transactions of the current user. It does not return any object because
 	 * the lookup method over the DHT is not instantaneous, p2pLayer will notify this class when bills reception
 	 * is completed
 	 */
@@ -746,13 +734,11 @@ public class Core implements CoreObserver {
 	 */
 	@Override
 	public void onReceiveNotification(Notification notification) {
-		//notificationsReceived.put(notification.getRef(), notification);
 		guiObserver.onReceiveNotification(notification.getNotificationReference());
 	}
 
 	/**
-	 * Finished storage into the DHT.
-	 * If an error has occurred, the boolean error variable is set to true
+	 * Finished storage into the DHT. If an error has occurred, the boolean error variable is set to true
 	 * @param msg
 	 * @param error
 	 */
@@ -771,8 +757,7 @@ public class Core implements CoreObserver {
 	}
 
 	/**
-	 * Successfully Bill request
-	 * If an error has occurred, the boolean error variable is set to true
+	 * Successfully Bill request. If an error has occurred, the boolean error variable is set to true
 	 * @param bill
 	 * @param error
 	 * @param msg
@@ -780,35 +765,29 @@ public class Core implements CoreObserver {
 	@Override
 	public void onLookupBill(PastContent bill, boolean error, String msg) {
 		if (error){
-			//Handle error
+			//TODO
 		}
 		else{
 			try {
 				Bill billEntry = (Bill) bill;
-				//to do
+				
 				if (!loadedBills.containsKey(billEntry.getSelf_transRef()))
 					loadedBills.put(billEntry.getSelf_transRef(), billEntry);
-				else {
-					//Bill already loaded
-				}
 			}
 			catch (ClassCastException e){
-				//Handle error
+				//TODO
 			}
 		}
 		
 		loadBillTrials++;
 		
 		if (loadBillTrials == billsToload){
-			//notify to this slept thread waiting
-
 			loadTransactionsSemaphore.release();
 		}
 	}
 
 	/**
-	 * successfully AccountLedgerRequest
-	 * If an error has occurred, the boolean error variable is set to true
+	 * Successfully AccountLedgerRequest. If an error has occurred, the boolean error variable is set to true
 	 * @param accountLedger
 	 * @param error
 	 * @param msg
@@ -839,14 +818,13 @@ public class Core implements CoreObserver {
 					loadAccountLedgerSemaphore.release();
 			}
 			catch (ClassCastException e){
-				//Handle error
+				//TODO
 			}
 		}
 	}
 
 	/**
-	 * Successfully FAMEntry request
-	 * If an error has occurred, the boolean error variable is set to true
+	 * Successfully FAMEntry request. If an error has occurred, the boolean error variable is set to true
 	 * @param famEntry
 	 * @param error
 	 * @param msg
@@ -873,14 +851,13 @@ public class Core implements CoreObserver {
 					loadFAMSemaphore.release();
 			}
 			catch (ClassCastException e){
-				//Handle error
+				//TODO
 			}
 		}
 	}
 
 	/**
-	 * Successfully FBMEntry request
-	 * If an error has occurred, the boolean error variable is set to true
+	 * Successfully FBMEntry request. If an error has occurred, the boolean error variable is set to true
 	 * @param fbmEntry
 	 * @param error
 	 * @param msg
@@ -908,14 +885,13 @@ public class Core implements CoreObserver {
 					loadFBMSemaphore.release();
 			}
 			catch (ClassCastException e){
-				//Handle error
+				//TODO
 			}
 		}
 	}
 	
 	/**
-	 * Successfully PublicProfile request
-	 * If an error has occurred, the boolean error variable is set to true
+	 * Successfully PublicProfile request. If an error has occurred, the boolean error variable is set to true
 	 * @param publicProfile
 	 * @param error
 	 * @param msg
@@ -924,7 +900,7 @@ public class Core implements CoreObserver {
 	public void onLookupPublicProfile(PastContent publicProfile, boolean error, String msg) {
 		guiObserver.onLogMessage(msg);
 		if (error){
-			//guiObserver.onFailedPublicProfileLoad();
+			guiObserver.onFailedPublicProfileLoad();
 		}
 		else{
 			try{
@@ -932,7 +908,7 @@ public class Core implements CoreObserver {
 				guiObserver.onViewPublicProfile(this.publicProfile.getSelf_firstName(), this.publicProfile.getSelf_surnames());
 			}
 			catch (ClassCastException e) {
-				//guiObserver.onFailedPublicProfileLoad();
+				guiObserver.onFailedPublicProfileLoad();
 			}
 		}
 		

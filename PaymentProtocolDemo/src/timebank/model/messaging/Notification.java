@@ -45,10 +45,14 @@ public abstract class Notification implements Message {
 		return from;
 	}
 	
+	/**
+	 * Each notification has an own way of being handled. This method is implemented by each notification type
+	 * @param observer
+	 */
 	public abstract void handleNotification(GUIObserver observer);
 	
 	/**
-	 * Returns the type of the notification. This method is implemented by each notification type
+	 * THis method returns the type of the notification. This method is implemented by each notification type
 	 * @return
 	 */
 	public abstract NotificationType getNotificationType();

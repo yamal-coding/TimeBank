@@ -1,7 +1,7 @@
 package timebank.model.validation;
 
 /**
- * This class is used to validate the partial entries of each pament phase
+ * This class is used to validate the partial entries of each payment phase
  * @author yamal
  *
  */

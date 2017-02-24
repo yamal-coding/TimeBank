@@ -5,12 +5,7 @@ import java.net.InetSocketAddress;
 
 import rice.Continuation;
 import rice.environment.Environment;
-import rice.p2p.commonapi.Application;
-import rice.p2p.commonapi.Endpoint;
 import rice.p2p.commonapi.Id;
-import rice.p2p.commonapi.Message;
-import rice.p2p.commonapi.NodeHandle;
-import rice.p2p.commonapi.RouteMessage;
 import rice.p2p.past.Past;
 import rice.p2p.past.PastContent;
 import rice.pastry.PastryNode;
@@ -19,7 +14,6 @@ import rice.persistence.Storage;
 import timebank.model.ConnectionReturnCode;
 import timebank.model.exception.NodeNotInitializedException;
 import timebank.model.files.network.persistent.FileType;
-import timebank.model.messaging.Notification;
 import timebank.observer.CoreObserver;
 
 /**
@@ -32,7 +26,6 @@ public class P2PLayer {
 	private PastryIdFactory idFactory;
 	private Past past;
 	private PastryNode node;
-	private boolean endpointCreated;
 	
 	//Observer to communicate with application core
 	private CoreObserver coreObserver;
@@ -48,7 +41,6 @@ public class P2PLayer {
 	public P2PLayer(Environment env){
 		this.env = env;
 		this.connected = false;
-		this.endpointCreated = false;
 	}
 	
 	/**
@@ -133,7 +125,7 @@ public class P2PLayer {
 		past.insert(content, new InsertContinuationImpl(contentID, fileType));
 	}
 	
-	/**
+	/*
 	 * Private class used to insert some content into the DHT and received the notification
 	 * of failure or successful because this process is not instantaneous
 	 * @author yamal
@@ -181,7 +173,7 @@ public class P2PLayer {
 		past.lookup(key, new LookupContinuationImpl(contentID, fileType));
 	}
 	
-	/**
+	/*
 	 * Private class used to lookup some content from the DHT and received the notification
 	 * of failure or the requested object because this process is not instantaneous
 	 * @author yamal

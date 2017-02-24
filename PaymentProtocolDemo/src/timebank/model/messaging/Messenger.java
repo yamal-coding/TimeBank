@@ -13,6 +13,11 @@ import rice.p2p.commonapi.RouteMessage;
 import timebank.model.exception.NonExistingNotificationException;
 import timebank.observer.CoreObserver;
 
+/**
+ * This class is the handler of the messages sent/received to/from other nodes
+ * @author yamal
+ *
+ */
 public class Messenger implements Application {
 	private Endpoint endpoint;
 	

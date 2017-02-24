@@ -3,6 +3,11 @@ package timebank.model.messaging;
 import rice.p2p.commonapi.Id;
 import timebank.observer.GUIObserver;
 
+/**
+ * A second payment phase notification
+ * @author yamal
+ *
+ */
 public class NotificationPaymentPhase2 extends NotificationPayment {
 
 	private Id creditorLedgerPE1;
@@ -33,29 +38,55 @@ public class NotificationPaymentPhase2 extends NotificationPayment {
 	}
 	
 	public void handleNotification(GUIObserver observer){
+		//This notification is shown to the Debtor of a payment process,
+		//and it has to ask him if he wants to proceed with the next payment phase	(third phase)			
 		observer.onPaymentPhase2Started(notificationRef, transRef);
 	}
 	
+	/**
+	 * 
+	 * @return creditorLedgerPE1Hash
+	 */
 	public Id getCreditorLedgerPE1Hash() {
 		return creditorLedgerPE1;
 	}
 
+	/**
+	 * 
+	 * @return debitorFACreditorPE1Hash
+	 */
 	public Id getDebitorFACreditorPE1Hash() {
 		return debitorFACreditorPE1;
 	}
 
+	/**
+	 * creditorFBMPE1Hash
+	 * @return
+	 */
 	public Id getCreditorFBMPE1Hash() {
 		return creditorFBMPE1;
 	}
 
+	/**
+	 * debitorLedgerPE2Hash
+	 * @return
+	 */
 	public Id getDebitorLedgerPE2Hash() {
 		return debitorLedgerPE2;
 	}
 
+	/**
+	 * 
+	 * @return creditorFADebitorPE2Hash
+	 */
 	public Id getCreditorFADebitorPE2Hash() {
 		return creditorFADebitorPE2;
 	}
-
+	
+	/**
+	 * 
+	 * @return debitorFBMPE2Hash
+	 */
 	public Id getDebitorFBMPE2Hash() {
 		return debitorFBMPE2;
 	}

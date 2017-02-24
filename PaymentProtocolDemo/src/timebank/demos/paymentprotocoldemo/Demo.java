@@ -52,17 +52,27 @@ public class Demo {
 	public static void main(String[] args){
 		Demo d = new Demo();
 		try {
-			d.runDemo(9003, "192.168.1.39", 9003);
+			d.runDemo(9003, "192.168.1.44", 9003);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 	
+	/**
+	 * Class construtor
+	 */
 	public Demo(){
 		env = new Environment();
 		env.getParameters().setString("nat_search_policy","never");
 	}
 	
+	/**
+	 * Method used to run the Demo
+	 * @param bindport
+	 * @param bootAddress
+	 * @param bootport
+	 * @throws IOException
+	 */
 	public void runDemo(int bindport, String bootAddress, int bootport) throws IOException {
 		createBootNode(bindport, bootAddress, bootport);
 		
@@ -105,7 +115,7 @@ public class Demo {
 			@Override
 			public void run() {
 				try {
-					debitorConsoleGUI.run(9005, "192.168.1.39", 9003);
+					debitorConsoleGUI.run(9005, bootAddress, 9003);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -117,7 +127,7 @@ public class Demo {
 			@Override
 			public void run() {
 				try {
-					creditorConsoleGUI.run(9004, "192.168.1.39", 9003);
+					creditorConsoleGUI.run(9004, bootAddress, 9003);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
@@ -131,19 +141,19 @@ public class Demo {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				new MainView(debitorController, 9005, "192.168.1.39", 9003);
+				new MainView(debitorController, 9005, bootAddress, 9003);
 			}
 		}).start();
 		
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				new MainView(creditorController, 9004, "192.168.1.39", 9003);
+				new MainView(creditorController, 9004, bootAddress, 9003);
 			}
 		}).start();
 	}
 	
-	/**
+	/*
 	 * This function create a FreePastry node which will be the boot node
 	 */
 	private void createBootNode(int bindport, String bootAddress, int bootport) throws IOException {
@@ -166,7 +176,7 @@ public class Demo {
 		P2PUtil.connectNode(node, bootInetSocketAddress);
 	}
 	
-	/**
+	/*
 	 * This method stores the profiles created by this class before running the simulation
 	 * @param debitorPublicProfile
 	 * @param creditorPublicProfile
@@ -185,7 +195,7 @@ public class Demo {
 		past.insert(creditorLedger, new InsertContinuationImpl(FileType.ACCOUNT_LEDGER_ENTRY.toString() + ".creditorFirstAccountLedgerEntry"));
 	}
 	
-	/**
+	/*
 	 * Private class used in the insertion of the public profiles and bill. It receives the notification
 	 * of successful or failed storage after a time because this process is not instantaneous
 	 * @author yamal
@@ -222,7 +232,7 @@ public class Demo {
 		}		
 	}
 	
-	/**
+	/*
 	 * Method used to create a PublicProfile instance
 	 * @param userUUID
 	 * @param isCreditor
@@ -266,6 +276,17 @@ public class Demo {
 				self_last_FAMEntryDHTHash, self_last_FBMEntryDHTHash);
 	}
 	
+	/*
+	 * This method creates a sample AccountLedgerEntry used by this Demo
+	 * @param selfId
+	 * @param otherId
+	 * @param billDHTHash
+	 * @param selfProfileDHTHash
+	 * @param otherProfileDHTHash
+	 * @param userUUID
+	 * @param isCreditor
+	 * @return
+	 */
 	private AccountLedgerEntry createAccountLedgerEntry(Id selfId, Id otherId,  Id billDHTHash, Id selfProfileDHTHash, Id otherProfileDHTHash, UUID userUUID, boolean isCreditor){
 		double pre_balance, balance;
 		String self_digitalSignature, other_digitalSignature;
@@ -297,7 +318,7 @@ public class Demo {
 				new Timestamp(System.currentTimeMillis()), self_digitalSignature);
 	}
 	
-	/**
+	/*
 	 * This method creates a PrivateProfile for an user with a given UUID 
 	 * @param uuid
 	 * @return PrivateProfile
