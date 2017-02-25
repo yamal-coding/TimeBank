@@ -4,8 +4,12 @@ import java.sql.Timestamp;
 
 import rice.p2p.commonapi.Id;
 
+/**
+ * This class represents a FAMEntry DHT file
+ * @author yamal
+ *
+ */
 public class FAMEntry extends DHTEntry {
-	//private String fileType;
 	private int FAMEntryNum;
 	private Id self_ledgerEntry_DHTHash;
 	private boolean isCreditor;
@@ -14,10 +18,10 @@ public class FAMEntry extends DHTEntry {
 	private String comment;
 	private int numericalDegreeOfSatisfactionWithService;
 	private Id other_FBMEntry_DHTHash;
-	private Timestamp timestamp_otherPartySignature; //cambiar tipo
-	private String other_digitalSignature; //cambiar tipo
-	private Timestamp timestamp_creation; //cambiar tipo
-	private String self_digitalSignature; //cambiar tipo
+	private Timestamp timestamp_otherPartySignature;
+	private String other_digitalSignature;
+	private Timestamp timestamp_creation;
+	private String self_digitalSignature;
 
 	/**
 	 * Constructor to create a first partial entry of a FAMEntry (FAMPE1)
@@ -29,10 +33,9 @@ public class FAMEntry extends DHTEntry {
 	 * @param self_previous_FAMEntry_DHTHash
 	 * @param self_next_FAMEntry_DHTHash
 	 */
-	public FAMEntry(Id myId/*, String fileType*/, int fAMEntryNum, Id self_ledgerEntry_DHTHash, boolean isCreditor,
+	public FAMEntry(Id myId, int fAMEntryNum, Id self_ledgerEntry_DHTHash, boolean isCreditor,
 			Id self_previous_FAMEntry_DHTHash, Id self_next_FAMEntry_DHTHash) {
 		super(myId);
-		//this.fileType = fileType;
 		FAMEntryNum = fAMEntryNum;
 		this.self_ledgerEntry_DHTHash = self_ledgerEntry_DHTHash;
 		this.isCreditor = isCreditor;
@@ -53,7 +56,6 @@ public class FAMEntry extends DHTEntry {
 	public FAMEntry(Id id, FAMEntry famPE1, String comment, int numericalDegreeOfSatisfactionWithService,
 			Id other_FBMEntry_DHTHash, Timestamp timestamp_otherPartySignature, String other_digitalSignature){
 		super(id);
-		//this.fileType = famPE1.getFileType();
 		FAMEntryNum = famPE1.getFAMEntryNum();
 		this.self_ledgerEntry_DHTHash = famPE1.getSelf_ledgerEntry_DHTHash();
 		this.isCreditor = isCreditor();
@@ -75,7 +77,6 @@ public class FAMEntry extends DHTEntry {
 	 */
 	public FAMEntry(Id id, FAMEntry famPE2, Timestamp timestamp_creation, String self_digitalSignature){
 		super(id);
-		//this.fileType = famPE1.getFileType();
 		FAMEntryNum = famPE2.getFAMEntryNum();
 		this.self_ledgerEntry_DHTHash = famPE2.getSelf_ledgerEntry_DHTHash();
 		this.isCreditor = isCreditor();
@@ -90,10 +91,6 @@ public class FAMEntry extends DHTEntry {
 		this.self_digitalSignature = self_digitalSignature;
 		
 	}
-
-	/*public String getFileType() {
-		return fileType;
-	}*/
 
 	public int getFAMEntryNum() {
 		return FAMEntryNum;

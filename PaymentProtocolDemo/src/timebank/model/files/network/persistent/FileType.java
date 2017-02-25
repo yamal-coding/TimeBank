@@ -1,5 +1,10 @@
 package timebank.model.files.network.persistent;
 
+/**
+ * 
+ * @author yamal
+ *
+ */
 public enum FileType {
 	ACCOUNT_LEDGER_ENTRY("AccountLedgerEntry"),
 	FAM_ENTRY("FAMEntry"),

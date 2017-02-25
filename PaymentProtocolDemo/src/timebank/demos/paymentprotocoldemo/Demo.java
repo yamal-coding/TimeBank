@@ -74,37 +74,62 @@ public class Demo {
 	 * @throws IOException
 	 */
 	public void runDemo(int bindport, String bootAddress, int bootport) throws IOException {
+		//A boot node is created to be used by the future nodes to connect to the FreePastry network
 		createBootNode(bindport, bootAddress, bootport);
 		
+		//The user's private profiles of the demo are created
 		PrivateProfile debitorPrivateProfile = createPrivateProfile(java.util.UUID.randomUUID());
 		PrivateProfile creditorPrivateProfile = createPrivateProfile(java.util.UUID.randomUUID());
-		
+
+		//The user's public profiles of the demo are created
 		PublicProfile debitorPublicProfile = createPublicProfile(debitorPrivateProfile.getUUID(), false);
 		PublicProfile creditorPublicProfile = createPublicProfile(creditorPrivateProfile.getUUID(), true);
 
+		//A sample bill is created to make possible a payment process
 		PastContent bill = createBill(creditorPrivateProfile.getUUID(), creditorPublicProfile.getId(), debitorPublicProfile.getId());
 		
+		//The DHTHash of the public profile and the bill previously created are stored in the private profile of each user
 		debitorPrivateProfile.setSelf_publicProfile_DHTHash(debitorPublicProfile.getId());
 		debitorPrivateProfile.addTransaction(bill.getId());
 		
 		creditorPrivateProfile.setSelf_publicProfile_DHTHash(creditorPublicProfile.getId());
 		creditorPrivateProfile.addTransaction(bill.getId());
 		
+		//An AccountLedgerEntry is created for each user
 		PastContent debtorLedger = createAccountLedgerEntry(debitorPublicProfile.getSelf_first_LedgerEntryDHTHash(),
 				creditorPublicProfile.getSelf_first_LedgerEntryDHTHash(), bill.getId(), debitorPublicProfile.getId(), creditorPublicProfile.getId(), debitorPrivateProfile.getUUID(), false);
 
 		PastContent creditorLedger = createAccountLedgerEntry(creditorPublicProfile.getSelf_first_LedgerEntryDHTHash(),
 				debitorPublicProfile.getSelf_first_LedgerEntryDHTHash(), bill.getId(), creditorPublicProfile.getId(), debitorPublicProfile.getId(), creditorPrivateProfile.getUUID(), true);
 		
+		//At this moment the previous DHT entries can be stored on the DHT
 		storeDHTFiles(debitorPublicProfile, creditorPublicProfile, bill, debtorLedger, creditorLedger);
 		
+		//For each user's application launch:
+		//A P2PLayer is used to create a Core with all the logic of the application
 		P2PLayer debitorP2PLayer = new P2PLayer(new Environment());
 		P2PLayer creditorP2PLayer = new P2PLayer(new Environment());
 		Core debitorCore = new Core(debitorP2PLayer, debitorPrivateProfile);
 		Core creditorCore = new Core(creditorP2PLayer, creditorPrivateProfile);
 		
+		//Then, a Controller can be created and passed to the GUI
 		Controller debitorController = new Controller(debitorCore);
 		Controller creditorController = new Controller(creditorCore);
+		
+		//Graphic GUI
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				new MainView(debitorController, 9005, bootAddress, 9003);
+			}
+		}).start();
+		
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				new MainView(creditorController, 9004, bootAddress, 9003);
+			}
+		}).start();
 		
 		
 		//Console GUI
@@ -135,22 +160,6 @@ public class Demo {
 		}).start();*/
 		
 		//System.exit(0);
-		
-		
-		//Graphic GUI
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				new MainView(debitorController, 9005, bootAddress, 9003);
-			}
-		}).start();
-		
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				new MainView(creditorController, 9004, bootAddress, 9003);
-			}
-		}).start();
 	}
 	
 	/*
@@ -327,7 +336,7 @@ public class Demo {
 		return new PrivateProfile(uuid);
 	}
 	
-	/**
+	/*
 	 * This method creates a Bill with given information from public profile
 	 * @param uuid
 	 * @param creditorPublicProfile_DHTHash

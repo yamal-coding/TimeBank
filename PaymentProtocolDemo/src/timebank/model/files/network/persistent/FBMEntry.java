@@ -4,8 +4,12 @@ import java.sql.Timestamp;
 
 import rice.p2p.commonapi.Id;
 
+/**
+ * This class represents a FBMENtry DHT file
+ * @author yamal
+ *
+ */
 public class FBMEntry extends DHTEntry {
-	//private String fileType;
 	private int FBMEntryNum;
 	private Id self_ledgerEntry_DHTHash;
 	private boolean isCreditor;
@@ -29,11 +33,10 @@ public class FBMEntry extends DHTEntry {
 	 * @param self_previous_FAMEntry_DHTHash
 	 * @param self_next_FAMEntry_DHTHash
 	 */
-	public FBMEntry(Id myId/*, String fileType*/, int FBMEntryNum, Id self_ledgerEntry_DHTHash, boolean isCreditor,
+	public FBMEntry(Id myId, int FBMEntryNum, Id self_ledgerEntry_DHTHash, boolean isCreditor,
 			String comment, int numericalDegreeOfSatisfactionWithService, Id self_previous_FAMEntry_DHTHash,
 			Id self_next_FAMEntry_DHTHash) {
 		super(myId);
-		//this.fileType = fileType;
 		this.FBMEntryNum = FBMEntryNum;
 		this.self_ledgerEntry_DHTHash = self_ledgerEntry_DHTHash;
 		this.isCreditor = isCreditor;
@@ -51,7 +54,6 @@ public class FBMEntry extends DHTEntry {
 	 */
 	public FBMEntry(Id id, FBMEntry fbmPE1, Id other_FAMEntry_DHTHash){
 		super(id);
-		//this.fileType = fbmPE1.getFileType();
 		this.FBMEntryNum = fbmPE1.getFBMEntryNum();
 		this.self_ledgerEntry_DHTHash = fbmPE1.getSelf_ledgerEntry_DHTHash();
 		this.isCreditor = fbmPE1.isCreditor();
@@ -71,7 +73,6 @@ public class FBMEntry extends DHTEntry {
 	 */
 	public FBMEntry(Id id, FBMEntry fbmPE2, Timestamp timestamp_creation, String self_digitalSignature){
 		super(id);
-		//this.fileType = fbmPE2.getFileType();
 		this.FBMEntryNum = fbmPE2.getFBMEntryNum();
 		this.self_ledgerEntry_DHTHash = fbmPE2.getSelf_ledgerEntry_DHTHash();
 		this.isCreditor = fbmPE2.isCreditor();
@@ -84,10 +85,6 @@ public class FBMEntry extends DHTEntry {
 		this.self_digitalSignature = self_digitalSignature;
 	}
 	
-	/*public String getFileType() {
-		return fileType;
-	}*/
-
 	public int getFBMEntryNum() {
 		return FBMEntryNum;
 	}

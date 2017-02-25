@@ -14,6 +14,11 @@ import javax.swing.border.EmptyBorder;
 import timebank.control.Controller;
 import javax.swing.JLabel;
 
+/**
+ * This GUI displays a window with information of a transaction
+ * @author yamal
+ *
+ */
 public class ViewTransaction extends JDialog{
 	private Controller c;
 	private String ref;
@@ -32,9 +37,6 @@ public class ViewTransaction extends JDialog{
 		initGUI();
 	}
 
-	/**
-	 * Create the dialog.
-	 */
 	public void initGUI() {
 		setBounds(100, 100, 450, 300);
 		getContentPane().setLayout(new BorderLayout());
