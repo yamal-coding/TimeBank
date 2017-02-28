@@ -137,7 +137,8 @@ public class Core implements CoreObserver {
 		if (publicProfile == null)
 			guiObserver.onFailedPublicProfileLoad();
 		else
-			guiObserver.onViewPublicProfile(publicProfile.getSelf_firstName(), publicProfile.getSelf_surnames());
+			guiObserver.onViewPublicProfile(publicProfile.getSelf_firstName(), publicProfile.getSelf_surnames(),
+					publicProfile.getSelf_telephone(), publicProfile.getSelf_email());
 	}
 	
 	/**
@@ -905,7 +906,8 @@ public class Core implements CoreObserver {
 		else{
 			try{
 				this.publicProfile = (PublicProfile) publicProfile;
-				guiObserver.onViewPublicProfile(this.publicProfile.getSelf_firstName(), this.publicProfile.getSelf_surnames());
+				guiObserver.onViewPublicProfile(this.publicProfile.getSelf_firstName(), this.publicProfile.getSelf_surnames(),
+						this.publicProfile.getSelf_telephone(), this.publicProfile.getSelf_email());
 			}
 			catch (ClassCastException e) {
 				guiObserver.onFailedPublicProfileLoad();

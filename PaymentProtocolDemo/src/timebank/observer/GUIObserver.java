@@ -36,8 +36,10 @@ public interface GUIObserver {
 	 * Method called to pass some public information of the current user to the GUI
 	 * @param name
 	 * @param surname
+	 * @param phone
+	 * @param email
 	 */
-	public void onViewPublicProfile(String name, String surname);
+	public void onViewPublicProfile(String name, String surname, int phone, String email);
 	
 	/**
 	 * This method returns information about a transaction previously selected on the GUI to be shown

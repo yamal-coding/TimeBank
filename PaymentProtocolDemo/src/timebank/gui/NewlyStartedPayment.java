@@ -38,7 +38,8 @@ public class NewlyStartedPayment extends JDialog {
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		
 		contentPanel.add(new JLabel("You have a new notification:"));
-		contentPanel.add(new JLabel("Do you want to validate the previouse phase and start the second phase of this payment?"));
+		contentPanel.add(new JLabel("<html>" + "Do you want to validate the previouse "
+				+ "phase and start the second phase of this payment?" + "</html>"));
 		contentPanel.add(new JLabel("Notification reference: " + notificationRef));
 		contentPanel.add(new JLabel("This notification refers to the transaction: " + transactionRef));
 

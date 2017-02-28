@@ -38,7 +38,7 @@ public class StartPaymentPhase4Confirmation extends JDialog {
 		getContentPane().add(contentPanel, BorderLayout.CENTER);
 		
 		contentPanel.add(new JLabel("You have a new notification:"));
-		contentPanel.add(new JLabel("Do you want to validate the previous phase and start the fourth phase of this payment?"));
+		contentPanel.add(new JLabel("<html>" + "Do you want to validate the previous phase and start the fourth phase of this payment?" + "</html>"));
 		contentPanel.add(new JLabel("Notification reference: " + notRef));		
 		contentPanel.add(new JLabel("This notification refers to the transaction: " + transRef));
 

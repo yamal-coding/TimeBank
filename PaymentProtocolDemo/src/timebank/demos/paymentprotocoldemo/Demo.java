@@ -52,7 +52,7 @@ public class Demo {
 	public static void main(String[] args){
 		Demo d = new Demo();
 		try {
-			d.runDemo(9003, "192.168.1.44", 9003);
+			d.runDemo(9003, "192.168.1.39", 9003);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -254,8 +254,8 @@ public class Demo {
 		String self_digitalSignature_creation;
 		
 		if (isCreditor){
-			self_firstName = "Juan (Creditor)";
-			self_surnames = "Sanchez";
+			self_firstName = "Acreedor";
+			self_surnames = "Creditor";
 			self_telephone = 555888;
 			self_email = "creditor@timebankucm.es";
 			self_address = "Elm Street";
@@ -263,8 +263,8 @@ public class Demo {
 			self_digitalSignature_creation = "FirmaCreditor (pendiente de cambiar tipo)";
 		}
 		else {
-			self_firstName = "Pepe (Debitor)";
-			self_surnames = "Garcia";
+			self_firstName = "Deudor";
+			self_surnames = "Debtor";
 			self_telephone = 555777;
 			self_email = "debitor@timebankucm.es";
 			self_address = "Sesame Street";
@@ -344,8 +344,8 @@ public class Demo {
 	 * @return Bill
 	 */
 	private Bill createBill(UUID uuid, Id creditorPublicProfile_DHTHash, Id debitorPublicProfile_DHTHash){
-		String self_transRef = "creditor sample bill";
-		String other_transRef = "debitor sample bill";
+		String self_transRef = "factura de prueba";
+		String other_transRef = "factura de prueba";
 		Id self_profile_DHTHash = creditorPublicProfile_DHTHash;
 		Id other_profile_DHTHash = debitorPublicProfile_DHTHash;
 		double actualServiceHours = 4;

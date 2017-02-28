@@ -25,11 +25,18 @@ import java.awt.FlowLayout;
 import javax.swing.JButton;
 import javax.swing.JList;
 
+/**
+ * Main view of the application
+ * @author yamal
+ *
+ */
 public class MainView extends JFrame implements ActionListener, GUIObserver{
 
 	private JTextPane logTextPane;
 	private JLabel nameLabel;
 	private JLabel surnameLabel;
+	private JLabel phoneNumber;
+	private JLabel emailLabel;
 	
 	private DefaultListModel<String> transactionsListModel;
 	private JList<String> transactionsList;
@@ -94,7 +101,7 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		gbc_profileSubPanel.gridx = 0;
 		gbc_profileSubPanel.gridy = 1;
 		profilePanel.add(profileSubPanel, gbc_profileSubPanel);
-		profileSubPanel.setLayout(new GridLayout(2, 1, 0, 0));
+		profileSubPanel.setLayout(new GridLayout(4, 1));
 		
 		nameLabel = new JLabel("");
 		profileSubPanel.add(nameLabel);
@@ -102,15 +109,22 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		surnameLabel = new JLabel("");
 		profileSubPanel.add(surnameLabel);
 		
+		phoneNumber = new JLabel("");
+		profileSubPanel.add(phoneNumber);
+		
+		emailLabel = new JLabel("");
+		profileSubPanel.add(emailLabel);
+		
+		
 		JPanel paymentsPanel = new JPanel();
 		panel.add(paymentsPanel);
-		paymentsPanel.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
+		paymentsPanel.setLayout(new BorderLayout());
 		
 		JLabel paymentsLabel = new JLabel("Transactions");
-		paymentsPanel.add(paymentsLabel);
+		paymentsPanel.add(paymentsLabel, BorderLayout.NORTH);
 		
 		JPanel paymentsSubpanel = new JPanel();
-		paymentsPanel.add(paymentsSubpanel);
+		paymentsPanel.add(paymentsSubpanel, BorderLayout.CENTER);
 		
 		transactionsListModel = new DefaultListModel<String>();
 		transactionsList = new JList<String>(transactionsListModel);
@@ -119,33 +133,19 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		paymentsSubpanel.add(transactionsScrollPane);
 		
 		viewTransaction = new JButton("View");
-		//viewTransaction.setActionCommand("viewTransaction");
 		viewTransaction.setName("viewTransaction");
 		viewTransaction.addActionListener(this);
-		paymentsPanel.add(viewTransaction);
+		paymentsPanel.add(viewTransaction, BorderLayout.SOUTH);
 		
 		JPanel notificationsPanel = new JPanel();
 		panel.add(notificationsPanel);
-		GridBagLayout gbl_notificationsPanel = new GridBagLayout();
-		gbl_notificationsPanel.columnWidths = new int[]{0, 0};
-		gbl_notificationsPanel.rowHeights = new int[]{0, 0, 0};
-		gbl_notificationsPanel.columnWeights = new double[]{1.0, Double.MIN_VALUE};
-		gbl_notificationsPanel.rowWeights = new double[]{0.0, 1.0, Double.MIN_VALUE};
-		notificationsPanel.setLayout(gbl_notificationsPanel);
+		notificationsPanel.setLayout(new BorderLayout());
 		
 		JLabel notificationsLabel = new JLabel("Notifications");
-		GridBagConstraints gbc_notificationsLabel = new GridBagConstraints();
-		gbc_notificationsLabel.insets = new Insets(0, 0, 5, 0);
-		gbc_notificationsLabel.gridx = 0;
-		gbc_notificationsLabel.gridy = 0;
-		notificationsPanel.add(notificationsLabel, gbc_notificationsLabel);
+		notificationsPanel.add(notificationsLabel, BorderLayout.NORTH);
 		
 		JPanel notificationsSubpanel = new JPanel();
-		GridBagConstraints gbc_notificationsSubpanel = new GridBagConstraints();
-		gbc_notificationsSubpanel.fill = GridBagConstraints.BOTH;
-		gbc_notificationsSubpanel.gridx = 0;
-		gbc_notificationsSubpanel.gridy = 1;
-		notificationsPanel.add(notificationsSubpanel, gbc_notificationsSubpanel);
+		notificationsPanel.add(notificationsSubpanel, BorderLayout.CENTER);
 		
 		notificationsListModel = new DefaultListModel<String>();
 		notificationsList = new JList<String>(notificationsListModel);
@@ -155,10 +155,10 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		
 		
 		viewNotification = new JButton("View");
+		notificationsPanel.add(viewNotification, BorderLayout.SOUTH);
 		viewNotification.setActionCommand("viewNotification");
 		viewNotification.setName("viewNotification");
 		viewNotification.addActionListener(this);
-		notificationsPanel.add(viewNotification);
 		
 		this.setVisible(true);
 	}
@@ -236,12 +236,14 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	}
 	
 	@Override
-	public void onViewPublicProfile(String name, String surname) {
+	public void onViewPublicProfile(String name, String surname, int phone, String email) {
 		logTextPane.setText(logTextPane.getText() + "Public profile loaded succesfully.\n");
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				nameLabel.setText("Name: " + name);
-				surnameLabel.setText("Surame: " + surname);
+				surnameLabel.setText("Surname: " + surname);
+				phoneNumber.setText("Phone: " + phone);
+				emailLabel.setText("E-mail: " + email);
 			}
 		});
 	}

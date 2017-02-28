@@ -140,7 +140,7 @@ public class TerminalGUI implements GUIObserver {
 	}
 
 	@Override
-	public synchronized void onViewPublicProfile(String name, String surname) {
+	public synchronized void onViewPublicProfile(String name, String surname, int phone, String email) {
 		println("Name: " + name);
 		println("Surname: " + surname);
 	}

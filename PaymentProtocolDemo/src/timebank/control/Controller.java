@@ -4,6 +4,11 @@ package timebank.control;
 import timebank.model.Core;
 import timebank.observer.GUIObserver;
 
+/**
+ * 
+ * @author yamal
+ *
+ */
 public class Controller {
 	//The logic of the application
 	private Core core;
