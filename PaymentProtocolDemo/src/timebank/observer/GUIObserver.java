@@ -110,4 +110,17 @@ public interface GUIObserver {
 	 * @param notificationRef
 	 */
 	public void onPaymentPhase3ValidationSuccess(String notificationRef);
+	
+	/**
+	 * Method called when a notification that has been already checked has to be deleted on GUI's list
+	 * @param notificationRef
+	 */
+	public void onDeleteNotification(String notificationRef);
+	
+	/**
+	 * Method called when the payment has finished
+	 * @param notificationRef
+	 * @param transRef
+	 */
+	public void onPaymentFinished(String notificationRef, String transRef);
 }

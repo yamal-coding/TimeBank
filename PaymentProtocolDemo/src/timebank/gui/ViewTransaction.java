@@ -37,7 +37,7 @@ public class ViewTransaction extends JDialog{
 		initGUI();
 	}
 
-	public void initGUI() {
+	private void initGUI() {
 		setBounds(100, 100, 450, 300);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setLayout(new GridLayout(3, 1));

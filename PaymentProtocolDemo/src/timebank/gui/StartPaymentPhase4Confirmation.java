@@ -14,6 +14,11 @@ import javax.swing.border.EmptyBorder;
 
 import timebank.control.Controller;
 
+/**
+ * 
+ * @author yamal
+ *
+ */
 public class StartPaymentPhase4Confirmation extends JDialog {
 
 	private final JPanel contentPanel = new JPanel();
@@ -30,7 +35,7 @@ public class StartPaymentPhase4Confirmation extends JDialog {
 		initGUI();
 	}
 	
-	public void initGUI() {
+	private void initGUI() {
 		setBounds(100, 100, 450, 300);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setLayout(new GridLayout(4, 1));

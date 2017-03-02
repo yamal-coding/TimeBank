@@ -7,6 +7,11 @@ import java.util.Scanner;
 import timebank.control.Controller;
 import timebank.observer.GUIObserver;
 
+/**
+ * This class is not fully implemented. But this class is a console version of the GUI
+ * @author yamal
+ *
+ */
 public class TerminalGUI implements GUIObserver {
 	private Controller c;
 	private List<String> notifications;
@@ -207,6 +212,18 @@ public class TerminalGUI implements GUIObserver {
 
 	@Override
 	public void onPaymentPhase3Started(String notRef, String transRef) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onDeleteNotification(String notificationRef) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void onPaymentFinished(String notificationRef, String transRef) {
 		// TODO Auto-generated method stub
 		
 	}

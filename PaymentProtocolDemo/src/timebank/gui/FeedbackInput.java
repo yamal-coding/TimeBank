@@ -17,6 +17,11 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.JRadioButton;
 
+/**
+ * 
+ * @author yamal
+ *
+ */
 public class FeedbackInput extends JDialog implements ActionListener {
 
 	private final JPanel contentPanel = new JPanel();

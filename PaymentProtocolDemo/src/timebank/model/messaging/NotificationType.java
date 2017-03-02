@@ -9,6 +9,6 @@ package timebank.model.messaging;
 public enum NotificationType {
 	DEBITOR_PAYMENT_PHASE1, //First type of notification sent by debtor to creditor
 	CREDITOR_PAYMENT_PHASE2, //Second notification type sent by creditor to debtor
-	DEBITOR_PAYMENT_PHASE3 //Last type of notification sent by debtor to creditor
-	
+	DEBITOR_PAYMENT_PHASE3, //Third type of notification sent by debtor to creditor
+	CREDITOR_PAYMENT_PHASE4 //Last type of notification sent by creditor to debtor
 }

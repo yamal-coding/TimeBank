@@ -14,7 +14,12 @@ import javax.swing.border.EmptyBorder;
 
 import timebank.control.Controller;
 
-public class NewlyStartedPayment extends JDialog {
+/**
+ * 
+ * @author yamal
+ *
+ */
+public class StartPaymentPhase2Confirmation extends JDialog {
 
 	private final JPanel contentPanel = new JPanel();
 
@@ -22,7 +27,7 @@ public class NewlyStartedPayment extends JDialog {
 	private String notificationRef;
 	private String transactionRef;
 	
-	public NewlyStartedPayment(Controller c, String notRef, String transRef){
+	public StartPaymentPhase2Confirmation(Controller c, String notRef, String transRef){
 		this.c = c;
 		this.notificationRef = notRef;
 		this.transactionRef = transRef;
@@ -30,7 +35,7 @@ public class NewlyStartedPayment extends JDialog {
 		initGUI();
 	}
 	
-	public void initGUI() {
+	private void initGUI() {
 		setBounds(100, 100, 450, 300);
 		getContentPane().setLayout(new BorderLayout());
 		contentPanel.setLayout(new GridLayout(4, 1));

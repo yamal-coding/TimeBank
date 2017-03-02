@@ -54,16 +54,13 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	 */
 	public MainView(Controller c, int bindport, String bootAddress, int bootport) {
 		super("Time bank");
-		initialize();
+		initGUI();
 		this.c = c;
 		this.c.addObserver(this);
 		this.c.connect(bindport, bootAddress, bootport);
 	}
 
-	/**
-	 * Initialize the contents of the frame.
-	 */
-	private void initialize() {
+	private void initGUI() {
 		this.setBounds(100, 100, 736, 437);
 		this.setDefaultCloseOperation(EXIT_ON_CLOSE);
 		this.getContentPane().setLayout(new BorderLayout(0, 0));
@@ -176,7 +173,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 			c.handleNotification(notificationsList.getSelectedValue());
 		}
 		else if (option.equals("viewTransaction")){
-			//System.out.println(transactionsList.getSelectedValue());
 			c.viewTransaction(transactionsList.getSelectedValue());
 		}
 	}
@@ -186,7 +182,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				log("Failed connection: internal error.");
-				//logTextPane.setText(logTextPane.getText() + "Failed connection: internal error.\n");
 			}
 		});
 	}
@@ -196,7 +191,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				log("There is not any transaction to load.");
-				//logTextPane.setText(logTextPane.getText() + "There is not any transaction to load.\n");
 			}
 		});
 	}
@@ -208,7 +202,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 				SwingUtilities.invokeLater(new Runnable() {
 					public void run(){
 						log("New notification received: " + notification);
-						//logTextPane.setText(logTextPane.getText() + "New notification received: " + notification + "\n");
 						notificationsListModel.addElement(notification);
 					}
 				});
@@ -221,7 +214,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				log("Failed connection: Node already connected.");
-				//logTextPane.setText(logTextPane.getText() + "Failed connection: Node already connected.\n");
 			}
 		});
 	}
@@ -237,7 +229,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 	
 	@Override
 	public void onViewPublicProfile(String name, String surname, int phone, String email) {
-		logTextPane.setText(logTextPane.getText() + "Public profile loaded succesfully.\n");
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				nameLabel.setText("Name: " + name);
@@ -253,7 +244,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				log("Bill " + transref + " loaded.");
-				//logTextPane.setText(logTextPane.getText() + "Bill " + transref + " loaded.\n");
 				transactionsListModel.addElement(transref);
 			}
 		});
@@ -264,15 +254,13 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				log("Public profile falied load.");
-				//logTextPane.setText(logTextPane.getText() + "Public profile falied load.\n");
 			}
 		});
 	}
 
 	@Override
 	public void onFailedNotificationLoad() {
-		// TODO Auto-generated method stub
-		
+		log("An error occurred loading the selected notification.");
 	}
 
 	@Override
@@ -280,7 +268,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				log("Succesful connection.");
-				//logTextPane.setText(logTextPane.getText() + "Succesful connection.\n");
 			}
 		});
 	}
@@ -291,7 +278,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				log(msg);
-				//logTextPane.setText(logTextPane.getText() + msg + "\n");
 			}
 		});
 	}
@@ -303,7 +289,7 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 				//Las cosas que se preguntaran aqui son si el Creditor desea validar ahora o no
 				//los ficheros parciales de la primera fase del pago creados por el Debtor asociados
 				//a la notificacion recibida
-				new NewlyStartedPayment(c, notRef, transRef);
+				new StartPaymentPhase2Confirmation(c, notRef, transRef);
 			}
 		});
 	}
@@ -315,7 +301,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 				//Notificar que la validacion de los ficheros de la primera fase son correctos
 				//y pedir el feedback y enviarlo para empezar la segunda fase por parte del creditor
 				log("Phase 1 validation success.");
-				//logTextPane.setText(logTextPane.getText() + "Validacion fase 1 exitosa\n");
 				new FeedbackInput(c, notificationRef, true);
 			}
 		});	
@@ -335,7 +320,6 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				log("Phase 2 validation success.");
-				//logTextPane.setText(logTextPane.getText() + "Validacion fase 2 exitosa\n");
 				c.debitorPaymentPhase3(notificationRef);
 			}
 		});
@@ -355,8 +339,26 @@ public class MainView extends JFrame implements ActionListener, GUIObserver{
 		SwingUtilities.invokeLater(new Runnable() {
 			public void run(){
 				log("Phase 3 validation success.");
-				//logTextPane.setText(logTextPane.getText() + "Validacion fase 3 exitosa\n");
 				c.creditorPaymentPhase4(notificationRef);
+			}
+		});
+	}
+
+	@Override
+	public void onDeleteNotification(String notificationRef) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				notificationsListModel.removeElement(notificationRef);
+			}
+		});
+	}
+
+	@Override
+	public void onPaymentFinished(String notificationRef, String transRef) {
+		SwingUtilities.invokeLater(new Runnable() {
+			public void run(){
+				new FinishedPayment(transRef);
+				notificationsListModel.removeElement(notificationRef);
 			}
 		});
 	}

@@ -25,6 +25,7 @@ import timebank.model.messaging.Notification;
 import timebank.model.messaging.NotificationPaymentPhase1;
 import timebank.model.messaging.NotificationPaymentPhase2;
 import timebank.model.messaging.NotificationPaymentPhase3;
+import timebank.model.messaging.NotificationPaymentPhase4;
 import timebank.model.p2p.P2PLayer;
 import timebank.model.util.Util;
 import timebank.model.validation.EntryValidator;
@@ -276,6 +277,9 @@ public class Core implements CoreObserver {
 			Notification notificationPhase1 = new NotificationPaymentPhase1(p2pLayer.getNode().getId(), transRef,
 					debitorLedgerEntryPE1.getId(), creditorFADebitorPE1.getId(), debitorFBMEntryPE1.getId());
 			
+
+			guiObserver.onLogMessage("First stage of Payment Phase 1 finished.");
+			
 			sendNotification(notificationPhase1);
 		} catch (NodeNotInitializedException e) {
 			// TODO
@@ -420,6 +424,8 @@ public class Core implements CoreObserver {
 			
 			sendNotification(notificationPhase2);
 			
+			guiObserver.onLogMessage("First stage of Payment Phase 2 finished.");
+			guiObserver.onDeleteNotification(notificationRef);
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
 		}
@@ -543,6 +549,9 @@ public class Core implements CoreObserver {
 			
 			//The entries hashes are sent as Notification objects to the creditor
 			sendNotification(notificationPhase3);
+
+			guiObserver.onLogMessage("First stage of Payment Phase 3 finished.");
+			guiObserver.onDeleteNotification(notificationRef);
 			
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
@@ -630,8 +639,18 @@ public class Core implements CoreObserver {
 			
 			storeFilesCreditorPaymentProtocolPhase4(creditorLedgerEntry, creditorFBMEntry, debitorFACreditor);
 			
+			Notification notificationPhase4 = new NotificationPaymentPhase4(p2pLayer.getNode().getId(), transRef);
+			sendNotification(notificationPhase4);
+			
+			guiObserver.onLogMessage("Payment Phase 4 finished.");
+			guiObserver.onLogMessage("Payment finished.");
+			
+			guiObserver.onDeleteNotification(notificationRef);
 		} catch (NonExistingNotificationException e) {
 			guiObserver.onFailedNotificationLoad();
+		} catch (NodeNotInitializedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
