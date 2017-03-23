@@ -1,6 +1,8 @@
 package timebank.model;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 
@@ -48,8 +50,8 @@ public class Core implements CoreObserver {
 	//Object used to send, received and store messages from/to others nodes
 	private Messenger messenger;
 		
-	//Observer to communicate with GUI
-	private GUIObserver guiObserver;
+	//List of gui bservers to communicate with GUI
+	private List<GUIObserver> guiObservers;
 	
 	//Information of the current user
 	private PrivateProfile privateProfile;
@@ -94,6 +96,7 @@ public class Core implements CoreObserver {
 		this.loadMoreLedger = false;
 		this.loadMoreFAM = false;
 		this.loadMoreFBM = false;
+		this.guiObservers = new ArrayList<GUIObserver>();
 		this.loadedBills = new HashMap<String, Bill>();
 		this.loadedDHTEntries = new HashMap<Id, DHTEntry>();
 		this.storedFAMEntryDHTHashes = new HashMap<String, Id>();
@@ -115,7 +118,7 @@ public class Core implements CoreObserver {
 	 * @param obs
 	 */
 	public synchronized void addObserver(GUIObserver obs){
-		this.guiObserver = obs;
+		this.guiObservers.add(obs);
 	}
 	
 	/**
@@ -124,8 +127,9 @@ public class Core implements CoreObserver {
 	 */
 	public void viewTransaction(String ref){
 		Bill bill = loadedBills.get(ref);
-		boolean isCreditor = bill.getSelf_profile_DHTHash().equals(publicProfile.getId()); 
-		guiObserver.onViewTransaction(ref, bill.getActualServiceHours(), isCreditor);
+		boolean isCreditor = bill.getSelf_profile_DHTHash().equals(publicProfile.getId());
+		for (GUIObserver go : guiObservers)
+			go.onViewTransaction(ref, bill.getActualServiceHours(), isCreditor);
 	}
 	
 	/**
@@ -136,9 +140,11 @@ public class Core implements CoreObserver {
 		//y notificar en caso de error
 		
 		if (publicProfile == null)
-			guiObserver.onFailedPublicProfileLoad();
+			for (GUIObserver go : guiObservers)
+				go.onFailedPublicProfileLoad();
 		else
-			guiObserver.onViewPublicProfile(publicProfile.getSelf_firstName(), publicProfile.getSelf_surnames(),
+			for (GUIObserver go : guiObservers)
+				go.onViewPublicProfile(publicProfile.getSelf_firstName(), publicProfile.getSelf_surnames(),
 					publicProfile.getSelf_telephone(), publicProfile.getSelf_email());
 	}
 	
@@ -148,7 +154,9 @@ public class Core implements CoreObserver {
 	 */
 	public void handleNotification(String ref){
 		try {
-			messenger.getNotification(ref).handleNotification(guiObserver);
+			Notification not = messenger.getNotification(ref);
+			for (GUIObserver go : guiObservers)
+				not.handleNotification(go);
 		} catch (NonExistingNotificationException e) {
 			// TODO Auto-generated catch block
 			
@@ -164,10 +172,12 @@ public class Core implements CoreObserver {
 	public void connect(int bindport, String bootAddress, int bootport){
 		switch(p2pLayer.join(bindport, bootAddress, bootport, this)){
 			case NODE_ALREADY_CONNECTED:
-				guiObserver.onNodeAlreadyConnected();
+				for (GUIObserver go : guiObservers)
+					go.onNodeAlreadyConnected();
 				break;
 			case FAILED_CONNECTION:
-				guiObserver.failedConnection();
+				for (GUIObserver go : guiObservers)
+					go.failedConnection();
 				break;
 			default: //CONNECTION_SUCCESSFUL
 				try {
@@ -187,7 +197,8 @@ public class Core implements CoreObserver {
 					//User transactions are loaded from DHT
 					if (privateProfile.getTransactionsDHTHashes().isEmpty())
 						//notify to the GUI that there are  not any pending transaction
-						guiObserver.onNoPendingTransactions();
+						for (GUIObserver go : guiObservers)
+							go.onNoPendingTransactions();
 					else {
 						loadBillTrials = 0;
 						loadTransactions();
@@ -199,18 +210,22 @@ public class Core implements CoreObserver {
 						
 						for (Map.Entry<String, Bill> entry : loadedBills.entrySet()){
 							//if (entry.getValue().getSelf_profile_DHTHash().equals(publicProfile.getId()))
-								guiObserver.onTransactionLoaded(entry.getValue().getSelf_transRef());
+							for (GUIObserver go : guiObservers)
+								go.onTransactionLoaded(entry.getValue().getSelf_transRef());
 							//else
 								//guiObserver.onTransactionLoaded(entry.getValue().getOther_transRef());
 						}
 					}
 					
-					guiObserver.onSuccesfulConnection();
+					for (GUIObserver go : guiObservers)
+						go.onSuccesfulConnection();
 				} catch (InterruptedException e) {
-					guiObserver.failedConnection();
+					for (GUIObserver go : guiObservers)
+						go.failedConnection();
 				}
 				catch (NodeNotInitializedException e) {
-					guiObserver.failedConnection();
+					for (GUIObserver go : guiObservers)
+						go.failedConnection();
 				}
 		}
 	}
@@ -277,8 +292,8 @@ public class Core implements CoreObserver {
 			Notification notificationPhase1 = new NotificationPaymentPhase1(p2pLayer.getNode().getId(), transRef,
 					debitorLedgerEntryPE1.getId(), creditorFADebitorPE1.getId(), debitorFBMEntryPE1.getId());
 			
-
-			guiObserver.onLogMessage("First stage of Payment Phase 1 finished.");
+			for (GUIObserver go : guiObservers)
+				go.onLogMessage("First stage of Payment Phase 1 finished.");
 			
 			sendNotification(notificationPhase1);
 		} catch (NodeNotInitializedException e) {
@@ -321,10 +336,12 @@ public class Core implements CoreObserver {
 			//TODO
 			entryValidator.validatePaymentPhase1();
 		
-			guiObserver.onPaymentPhase1ValidationSuccess(notificationRef);
+			for (GUIObserver go : guiObservers)
+				go.onPaymentPhase1ValidationSuccess(notificationRef);
 		
 		} catch (NonExistingNotificationException e) {
-			guiObserver.onFailedNotificationLoad();
+			for (GUIObserver go : guiObservers)
+				go.onFailedNotificationLoad();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -424,10 +441,13 @@ public class Core implements CoreObserver {
 			
 			sendNotification(notificationPhase2);
 			
-			guiObserver.onLogMessage("First stage of Payment Phase 2 finished.");
-			guiObserver.onDeleteNotification(notificationRef);
+			for (GUIObserver go : guiObservers) {
+				go.onLogMessage("First stage of Payment Phase 2 finished.");
+				go.onDeleteNotification(notificationRef);
+			}
 		} catch (NonExistingNotificationException e) {
-			guiObserver.onFailedNotificationLoad();
+			for (GUIObserver go : guiObservers)
+				go.onFailedNotificationLoad();
 		}
 		catch (NodeNotInitializedException e) {
 			// TODO Auto-generated catch block
@@ -482,10 +502,12 @@ public class Core implements CoreObserver {
 			//TODO
 			entryValidator.validatePaymentPhase2();
 			
-			guiObserver.onPaymentPhase2ValidationSuccess(notificationRef);
+			for (GUIObserver go : guiObservers)
+				go.onPaymentPhase2ValidationSuccess(notificationRef);
 		
 		} catch (NonExistingNotificationException e) {
-			guiObserver.onFailedNotificationLoad();
+			for (GUIObserver go : guiObservers)
+				go.onFailedNotificationLoad();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -550,11 +572,14 @@ public class Core implements CoreObserver {
 			//The entries hashes are sent as Notification objects to the creditor
 			sendNotification(notificationPhase3);
 
-			guiObserver.onLogMessage("First stage of Payment Phase 3 finished.");
-			guiObserver.onDeleteNotification(notificationRef);
+			for (GUIObserver go : guiObservers)
+				go.onLogMessage("First stage of Payment Phase 3 finished.");
+			for (GUIObserver go : guiObservers)
+				go.onDeleteNotification(notificationRef);
 			
 		} catch (NonExistingNotificationException e) {
-			guiObserver.onFailedNotificationLoad();
+			for (GUIObserver go : guiObservers)
+				go.onFailedNotificationLoad();
 		} catch (NodeNotInitializedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -598,9 +623,11 @@ public class Core implements CoreObserver {
 			//Creditor validates these files. An error is returned if one or more files are not well formed
 			entryValidator.validatePaymentPhase3();
 			
-			guiObserver.onPaymentPhase3ValidationSuccess(notificationRef);
+			for (GUIObserver go : guiObservers)
+				go.onPaymentPhase3ValidationSuccess(notificationRef);
 		} catch (NonExistingNotificationException e) {
-			guiObserver.onFailedNotificationLoad();
+			for (GUIObserver go : guiObservers)
+				go.onFailedNotificationLoad();
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -642,12 +669,13 @@ public class Core implements CoreObserver {
 			Notification notificationPhase4 = new NotificationPaymentPhase4(p2pLayer.getNode().getId(), transRef);
 			sendNotification(notificationPhase4);
 			
-			guiObserver.onLogMessage("Payment Phase 4 finished.");
-			guiObserver.onLogMessage("Payment finished.");
-			
-			guiObserver.onDeleteNotification(notificationRef);
+			for (GUIObserver go : guiObservers) {
+				go.onLogMessage("Payment Phase 4 finished.");
+				go.onPaymentFinished(notificationRef, transRef);
+			}
 		} catch (NonExistingNotificationException e) {
-			guiObserver.onFailedNotificationLoad();
+			for (GUIObserver go : guiObservers)
+				go.onFailedNotificationLoad();
 		} catch (NodeNotInitializedException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -754,7 +782,8 @@ public class Core implements CoreObserver {
 	 */
 	@Override
 	public void onReceiveNotification(Notification notification) {
-		guiObserver.onReceiveNotification(notification.getNotificationReference());
+		for (GUIObserver go : guiObservers)
+			go.onReceiveNotification(notification.getNotificationReference());
 	}
 
 	/**
@@ -764,7 +793,8 @@ public class Core implements CoreObserver {
 	 */
 	@Override
 	public void onFinishedStorage(String msg, boolean error) {
-		guiObserver.onLogMessage(msg);
+		for (GUIObserver go : guiObservers)
+			go.onLogMessage(msg);
 		
 		//TODO
 		//tratar el error
@@ -814,7 +844,9 @@ public class Core implements CoreObserver {
 	 */
 	@Override
 	public void onLookupAccountLedger(PastContent accountLedger, boolean error, String msg) {
-		guiObserver.onLogMessage(msg);
+		for (GUIObserver go : guiObservers)
+			go.onLogMessage(msg);
+		
 		if (error || accountLedger == null){
 			//If an error occurred then it is supposed that there is no next ledger to load
 			if (loadMoreLedger)
@@ -851,7 +883,9 @@ public class Core implements CoreObserver {
 	 */
 	@Override
 	public void onLookupFAMEntry(PastContent famEntry, boolean error, String msg) {
-		guiObserver.onLogMessage(msg);
+		for (GUIObserver go : guiObservers)
+			go.onLogMessage(msg);
+		
 		if (error || famEntry == null){
 			loadMoreFAM = false;
 			loadFAMSemaphore.release();
@@ -884,7 +918,8 @@ public class Core implements CoreObserver {
 	 */
 	@Override
 	public void onLookupFBMEntry(PastContent fbmEntry, boolean error, String msg) {
-		guiObserver.onLogMessage(msg);
+		for (GUIObserver go : guiObservers)
+			go.onLogMessage(msg);
 		if (error || fbmEntry == null){
 			loadMoreFBM = false;
 			loadFBMSemaphore.release();
@@ -918,18 +953,22 @@ public class Core implements CoreObserver {
 	 */
 	@Override
 	public void onLookupPublicProfile(PastContent publicProfile, boolean error, String msg) {
-		guiObserver.onLogMessage(msg);
+		for (GUIObserver go : guiObservers)
+			go.onLogMessage(msg);
 		if (error){
-			guiObserver.onFailedPublicProfileLoad();
+			for (GUIObserver go : guiObservers)
+				go.onFailedPublicProfileLoad();
 		}
 		else{
 			try{
 				this.publicProfile = (PublicProfile) publicProfile;
-				guiObserver.onViewPublicProfile(this.publicProfile.getSelf_firstName(), this.publicProfile.getSelf_surnames(),
+				for (GUIObserver go : guiObservers)
+					go.onViewPublicProfile(this.publicProfile.getSelf_firstName(), this.publicProfile.getSelf_surnames(),
 						this.publicProfile.getSelf_telephone(), this.publicProfile.getSelf_email());
 			}
 			catch (ClassCastException e) {
-				guiObserver.onFailedPublicProfileLoad();
+				for (GUIObserver go : guiObservers)
+					go.onFailedPublicProfileLoad();
 			}
 		}
 		

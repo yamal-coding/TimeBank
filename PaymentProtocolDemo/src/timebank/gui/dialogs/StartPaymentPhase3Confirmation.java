@@ -1,4 +1,4 @@
-package timebank.gui;
+package timebank.gui.dialogs;
 
 import java.awt.BorderLayout;
 import java.awt.FlowLayout;

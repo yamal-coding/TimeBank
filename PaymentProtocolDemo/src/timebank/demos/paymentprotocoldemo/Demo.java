@@ -52,7 +52,7 @@ public class Demo {
 	public static void main(String[] args){
 		Demo d = new Demo();
 		try {
-			d.runDemo(9003, "10.210.228.59", 9003);
+			d.runDemo(9003, "192.168.1.39", 9003);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
