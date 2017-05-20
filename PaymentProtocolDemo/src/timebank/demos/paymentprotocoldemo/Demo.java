@@ -15,7 +15,6 @@ import rice.pastry.commonapi.PastryIdFactory;
 import rice.persistence.Storage;
 import timebank.control.Controller;
 import timebank.gui.MainView;
-import timebank.gui.TerminalGUI;
 import timebank.model.Core;
 import timebank.model.files.local.PrivateProfile;
 import timebank.model.files.network.persistent.AccountLedgerEntry;
@@ -49,17 +48,17 @@ public class Demo {
 	PastryIdFactory idFactory;
 	PastryNode node;
 	
-	public static void main(String[] args){
+	/*public static void main(String[] args){
 		Demo d = new Demo();
 		try {
-			d.runDemo(9003, "192.168.1.39", 9003);
+			d.runDemo(9004, 9005, "192.168.1.39", 9003);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
+	}*/
 	
 	/**
-	 * Class construtor
+	 * Class constructor
 	 */
 	public Demo(){
 		env = new Environment();
@@ -73,9 +72,9 @@ public class Demo {
 	 * @param bootport
 	 * @throws IOException
 	 */
-	public void runDemo(int bindport, String bootAddress, int bootport) throws IOException {
+	public void runDemo(int bindport1, int bindport2, String bootAddress, int bootport) throws IOException {
 		//A boot node is created to be used by the future nodes to connect to the FreePastry network
-		createBootNode(bindport, bootAddress, bootport);
+		createBootNode(bootport, bootAddress, bootport);
 		
 		//The user's private profiles of the demo are created
 		PrivateProfile debitorPrivateProfile = createPrivateProfile(java.util.UUID.randomUUID());
@@ -120,46 +119,16 @@ public class Demo {
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				new MainView(debitorController, 9005, bootAddress, 9003);
+				new MainView(debitorController, bindport1, bootAddress, bootport);
 			}
 		}).start();
 		
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				new MainView(creditorController, 9004, bootAddress, 9003);
+				new MainView(creditorController, bindport2, bootAddress, bootport);
 			}
 		}).start();
-		
-		
-		//Console GUI
-		/*TerminalGUI creditorConsoleGUI = new TerminalGUI(creditorController, "CREDITOR");
-		TerminalGUI debitorConsoleGUI = new TerminalGUI(debitorController, "DEBTOR");
-		
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					debitorConsoleGUI.run(9005, bootAddress, 9003);
-				} catch (InterruptedException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
-			}
-		}).start();
-		
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					creditorConsoleGUI.run(9004, bootAddress, 9003);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-		}).start();*/
-		
-		//System.exit(0);
 	}
 	
 	/*
